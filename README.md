@@ -94,6 +94,7 @@ FastAPI app.py
 | `/marketplace` | Demo buyer/marketplace dashboard with crop listings and match scores |
 | `/community-dashboard` | Demo FPO/community dashboard with aggregate risk and supply insights |
 | `/disease-prediction` | Disease feature status page, with inference disabled until metadata is validated |
+| `/healthz` | Lightweight deployment health check |
 
 ## API Endpoints
 
@@ -111,6 +112,7 @@ FastAPI app.py
 | `/api/assistant` | POST JSON | Structured intent-based assistant response |
 | `/api/marketplace/listings` | GET | Demo marketplace listings |
 | `/api/community/summary` | GET | Demo FPO/community summary |
+| `/healthz` | GET | Cloud Run health check |
 
 ## Explanation & Trust Layer
 
@@ -181,6 +183,39 @@ Alternative:
 
 ```powershell
 uvicorn app:app --reload
+```
+
+## Google Cloud Run Deployment
+
+The repo includes a Cloud Run-ready `Dockerfile` and `.dockerignore`. The container listens on `0.0.0.0` and uses the `PORT` environment variable, defaulting to `8080`.
+
+Enable required Google Cloud services:
+
+```bash
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
+```
+
+Deploy from the repository root:
+
+```bash
+gcloud run deploy krishi-connect \
+  --source . \
+  --region asia-south1 \
+  --allow-unauthenticated \
+  --memory 1Gi \
+  --set-env-vars THINGSPEAK_CHANNEL_ID=<YOUR_CHANNEL_ID>,THINGSPEAK_READ_API_KEY=<YOUR_READ_API_KEY>
+```
+
+After deployment, verify:
+
+```bash
+curl https://<YOUR_CLOUD_RUN_URL>/healthz
+```
+
+Expected response:
+
+```json
+{"status":"ok","service":"krishi-connect"}
 ```
 
 ## Testing

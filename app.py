@@ -239,6 +239,11 @@ async def get_index(request: Request):
     )
 
 
+@app.get("/healthz", response_class=JSONResponse)
+async def healthz():
+    return {"status": "ok", "service": "krishi-connect"}
+
+
 @app.get("/dashboard", response_class=HTMLResponse)
 async def get_dashboard(request: Request):
     return templates.TemplateResponse(request, "dashboard.html")
@@ -387,4 +392,4 @@ async def assistant(payload: AssistantInput):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("app:app", host="0.0.0.0", port=int(os.getenv("PORT", "8080")), reload=True)
