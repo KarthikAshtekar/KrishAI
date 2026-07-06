@@ -5,21 +5,67 @@
 {% block content %}
 <div class="row">
     <div class="col-12">
-        <div class="platform-hero mb-4">
+        <div class="platform-hero home-hero mb-3">
             <div class="row g-4 align-items-center">
-                <div class="col-lg-8">
+                <div class="col-lg-7">
+                    <div class="hero-copy">
                     <div class="page-kicker">Working deployed prototype</div>
                     <h1 class="hero-title mb-2">Krishi Connect</h1>
                     <div class="hero-subtitle mb-3">AI-Powered Agricultural Decision Intelligence Platform</div>
-                    <p class="lead mb-4">Connecting farm data, AI models, IoT signals, market insights, and stakeholder workflows to support better rural decisions.</p>
+                    <p class="lead mb-3">Connecting farm data, AI models, IoT signals, market insights, and stakeholder workflows to support better rural decisions.</p>
                     <div class="d-flex flex-wrap gap-2">
                         <a class="btn btn-success" href="/decision-intelligence"><i class="bi bi-play-circle"></i> Start Demo</a>
                         <a class="btn btn-outline-success" href="/farmer-dashboard">Farmer Dashboard</a>
                         <a class="btn btn-outline-success" href="/community-dashboard">Community Dashboard</a>
                         <a class="btn btn-outline-success" href="/marketplace">Marketplace</a>
                     </div>
+                    <div class="hero-stat-strip">
+                        <div class="hero-stat">
+                            <strong>2</strong>
+                            <span>ML recommendation modules</span>
+                        </div>
+                        <div class="hero-stat">
+                            <strong>4</strong>
+                            <span>IoT signal fields</span>
+                        </div>
+                        <div class="hero-stat">
+                            <strong>3</strong>
+                            <span>Stakeholder dashboards</span>
+                        </div>
+                    </div>
+                    </div>
                 </div>
-                <div class="col-lg-4">
+                <div class="col-lg-5">
+                    <div class="hero-dashboard">
+                        <div class="d-flex justify-content-between gap-2 align-items-start">
+                            <div>
+                                <div class="hero-dashboard-label">Live demo console</div>
+                                <div class="hero-dashboard-value">Decision Intelligence</div>
+                            </div>
+                            <span class="status-pill status-model">MVP</span>
+                        </div>
+                        <div class="hero-dashboard-row">
+                            <div>
+                                <div class="hero-dashboard-label">Primary action</div>
+                                <div class="hero-dashboard-value">Irrigation and risk review</div>
+                            </div>
+                            <i class="bi bi-droplet-half"></i>
+                        </div>
+                        <div class="hero-dashboard-row">
+                            <div>
+                                <div class="hero-dashboard-label">Data layer</div>
+                                <div class="hero-dashboard-value">ThingSpeak + ML + demo market</div>
+                            </div>
+                            <i class="bi bi-broadcast"></i>
+                        </div>
+                        <div class="hero-dashboard-row">
+                            <div>
+                                <div class="hero-dashboard-label">Trust status</div>
+                                <div class="hero-dashboard-value">Labelled model, rule, and demo outputs</div>
+                            </div>
+                            <i class="bi bi-shield-check"></i>
+                        </div>
+                    </div>
                     <div class="d-flex flex-wrap gap-2 mb-3">
                         <span class="status-pill status-model">Model-based</span>
                         <span class="status-pill status-rule">Rule-based</span>
@@ -35,35 +81,35 @@
         <div class="row g-3 mb-4">
             <div class="col-md-3">
                 <div class="value-card">
-                    <i class="bi bi-cpu"></i>
+                    <div class="icon-shell"><i class="bi bi-cpu"></i></div>
                     <h2 class="h5 mt-2">AI Recommendations</h2>
                     <p class="mb-0 text-muted">Crop and fertilizer guidance using saved ML models and transparent explanation cards.</p>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="value-card">
-                    <i class="bi bi-broadcast-pin"></i>
+                    <div class="icon-shell"><i class="bi bi-broadcast-pin"></i></div>
                     <h2 class="h5 mt-2">Real-Time IoT Monitoring</h2>
                     <p class="mb-0 text-muted">ThingSpeak sensor readings for moisture, temperature, humidity, and light intensity.</p>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="value-card">
-                    <i class="bi bi-exclamation-diamond"></i>
+                    <div class="icon-shell"><i class="bi bi-exclamation-diamond"></i></div>
                     <h2 class="h5 mt-2">Anomaly & Workflow Alerts</h2>
                     <p class="mb-0 text-muted">Rule-based risk detection, irrigation advice, heat stress signals, and audit trail.</p>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="value-card">
-                    <i class="bi bi-people"></i>
+                    <div class="icon-shell"><i class="bi bi-people"></i></div>
                     <h2 class="h5 mt-2">Farmer, Buyer & FPO Dashboards</h2>
                     <p class="mb-0 text-muted">Stakeholder views for field action, buyer matching, and community well-being.</p>
                 </div>
             </div>
         </div>
 
-        <div class="decision-summary p-4 mb-4">
+        <div class="decision-summary workflow-panel p-4 mb-4">
             <div class="d-flex flex-wrap justify-content-between gap-3 align-items-center mb-3">
                 <div>
                     <div class="page-kicker">Recommended Demo Flow</div>
@@ -104,7 +150,7 @@
                 </div>
             </div>
         </div>
-        <div class="card shadow-sm mb-4">
+        <div class="card app-card mb-4">
             <div class="card-header bg-success text-white">
                 <h4 class="mb-0"><i class="bi bi-robot"></i> Agricultural Recommendations</h4>
             </div>

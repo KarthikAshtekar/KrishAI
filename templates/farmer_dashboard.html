@@ -19,9 +19,9 @@
     </div>
 
     <div class="col-lg-8">
-        <section class="decision-summary p-4 h-100">
-            <h2 class="h4">Today's Recommended Action</h2>
-            <p class="lead" id="todayAction">Loading...</p>
+        <section class="recommendation-panel h-100">
+            <div class="page-kicker">What should the farmer do today?</div>
+            <div class="recommendation-value" id="todayAction">Loading...</div>
             <div class="action-plan mb-3">
                 <h3 class="h5">Today's Action Plan</h3>
                 <ol class="mb-0" id="todayActionPlan">
@@ -62,7 +62,7 @@
             </div>
             <hr>
             <h3 class="h5">IoT Status</h3>
-            <p id="iotStatus" class="mb-0 text-muted">Loading sensor status...</p>
+            <p id="iotStatus" class="mb-0 recommendation-subtext">Loading sensor status...</p>
         </section>
     </div>
 
@@ -109,11 +109,18 @@
         target.innerHTML = '';
         alerts.forEach(alert => {
             const item = document.createElement('div');
-            item.className = 'audit-row mb-3';
+            const severityClass = alert.severity === 'Critical' ? 'severity-critical' : alert.severity === 'Warning' ? 'severity-warning' : 'severity-info';
+            const icon = alert.severity === 'Critical' ? 'bi-exclamation-octagon' : alert.severity === 'Warning' ? 'bi-exclamation-triangle' : 'bi-info-circle';
+            item.className = `alert-list-item ${alert.severity === 'Critical' ? 'alert-critical' : alert.severity === 'Warning' ? 'alert-warning' : 'alert-info'}`;
             item.innerHTML = `
-                <strong>${alert.severity}</strong>
-                <div>${alert.message}</div>
-                <small class="text-muted">${alert.recommended_action}</small>
+                <div class="alert-icon"><i class="bi ${icon}"></i></div>
+                <div>
+                    <div class="d-flex flex-wrap justify-content-between gap-2 mb-1">
+                        <strong>${alert.message}</strong>
+                        <span class="severity-badge ${severityClass}">${alert.severity}</span>
+                    </div>
+                    <small class="text-muted">${alert.recommended_action}</small>
+                </div>
             `;
             target.appendChild(item);
         });
@@ -124,13 +131,13 @@
         target.innerHTML = '';
         cards.slice(0, 4).forEach(card => {
             const item = document.createElement('div');
-            item.className = 'mb-3';
+            item.className = 'trust-card p-3 mb-3';
             item.innerHTML = `
                 <div class="d-flex justify-content-between gap-2">
                     <strong>${card.title}</strong>
                     <span class="status-pill ${card.basis.includes('demo') ? 'status-demo' : card.basis.includes('rule') ? 'status-rule' : 'status-model'}">${card.basis}</span>
                 </div>
-                <div>${card.why}</div>
+                <div class="mt-2">${card.why}</div>
                 <small class="text-muted">Reliability: ${card.confidence} | Source: ${card.data_source}</small>
             `;
             target.appendChild(item);

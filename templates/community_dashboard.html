@@ -16,8 +16,13 @@
 
     <div class="col-12">
         <section class="decision-summary p-4">
-            <h2 class="h4">Community Risk Snapshot</h2>
-            <p id="communityInsight" class="lead">Loading community insight...</p>
+            <div class="section-heading mb-2">
+                <div>
+                    <h2 class="h4">Community Risk Snapshot</h2>
+                    <p id="communityInsight" class="lead mb-0">Loading community insight...</p>
+                </div>
+                <div class="section-title-icon"><i class="bi bi-people"></i></div>
+            </div>
             <div class="d-flex flex-wrap gap-2 mb-3">
                 <span class="status-pill status-demo">Demo community records</span>
                 <span class="status-pill status-rule">Rule-based aggregation</span>
@@ -26,24 +31,28 @@
             <div class="row g-3">
                 <div class="col-md-3">
                     <div class="metric-card p-3">
+                        <div class="metric-icon"><i class="bi bi-person-check"></i></div>
                         <div class="metric-label">Farmers Monitored</div>
                         <div class="metric-value" id="totalFarmers">-</div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="metric-card p-3">
+                        <div class="metric-icon"><i class="bi bi-exclamation-octagon"></i></div>
                         <div class="metric-label">Critical Alerts</div>
                         <div class="metric-value" id="criticalAlerts">-</div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="metric-card p-3">
+                        <div class="metric-icon"><i class="bi bi-droplet-half"></i></div>
                         <div class="metric-label">Low Moisture Farms</div>
                         <div class="metric-value" id="lowMoisture">-</div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="metric-card p-3">
+                        <div class="metric-icon"><i class="bi bi-thermometer-sun"></i></div>
                         <div class="metric-label">Heat/Weather Risk</div>
                         <div class="metric-value" id="heatRisk">-</div>
                     </div>
@@ -122,7 +131,7 @@
             (data.community_decision_recommendations || data.suggested_community_actions || []).forEach(action => {
                 recommendations.insertAdjacentHTML('beforeend', `
                     <div class="col-md-6">
-                        <div class="action-plan h-100">${action}</div>
+                        <div class="community-action-card">${action}</div>
                     </div>
                 `);
             });

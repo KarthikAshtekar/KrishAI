@@ -26,23 +26,31 @@
                     <span class="status-pill status-prototype">Not a live trading system</span>
                 </div>
             </div>
-            <div class="table-responsive mt-3">
-                <table class="table table-hover align-middle table-fixed">
-                    <thead>
-                        <tr>
-                            <th>Farmer / Village</th>
-                            <th>Crop</th>
-                            <th>Expected Quantity</th>
-                            <th>Harvest Window</th>
-                            <th>Quality / Risk Label</th>
-                            <th>Match Score</th>
-                            <th>Suggested Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="marketRows">
-                        <tr><td colspan="7">Loading marketplace data...</td></tr>
-                    </tbody>
-                </table>
+            <div class="row g-3 my-3">
+                <div class="col-md-4">
+                    <div class="metric-card p-3 h-100">
+                        <div class="metric-icon"><i class="bi bi-shop"></i></div>
+                        <div class="metric-label">Buyer Match Mode</div>
+                        <div class="metric-value fs-5">Prototype</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="metric-card p-3 h-100">
+                        <div class="metric-icon"><i class="bi bi-box-seam"></i></div>
+                        <div class="metric-label">Listing Fields</div>
+                        <div class="metric-value fs-5">Supply + risk</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="metric-card p-3 h-100">
+                        <div class="metric-icon"><i class="bi bi-shield-check"></i></div>
+                        <div class="metric-label">Data Status</div>
+                        <div class="metric-value fs-5">Demo only</div>
+                    </div>
+                </div>
+            </div>
+            <div class="marketplace-grid mt-3" id="marketRows">
+                <div class="market-card">Loading marketplace data...</div>
             </div>
         </section>
     </div>
@@ -57,17 +65,31 @@
             const target = document.getElementById('marketRows');
             target.innerHTML = '';
             data.listings.forEach(item => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><strong>${item.farmer_name}</strong><br><small>${item.village}</small></td>
-                    <td>${item.crop}</td>
-                    <td>${item.expected_quantity}</td>
-                    <td>${item.harvest_window}</td>
-                    <td><span class="status-pill status-rule">${item.quality_risk_label || 'Demo quality signal pending'}</span></td>
-                    <td><span class="badge text-bg-success">${item.match_score}%</span><br><small>${item.suitability}</small></td>
-                    <td><strong>${item.buyer_segment}</strong><br><small>${item.suggested_buyer_action}</small></td>
+                const card = document.createElement('article');
+                card.className = 'market-card';
+                card.innerHTML = `
+                    <div class="market-card-header">
+                        <div>
+                            <div class="page-kicker">${item.crop}</div>
+                            <h3 class="h5 mb-1">${item.farmer_name}</h3>
+                            <div class="text-muted small">${item.village}</div>
+                        </div>
+                        <span class="market-score">${item.match_score}%</span>
+                    </div>
+                    <div class="detail-grid">
+                        <div class="detail-tile"><span>Quantity</span><strong>${item.expected_quantity}</strong></div>
+                        <div class="detail-tile"><span>Harvest</span><strong>${item.harvest_window}</strong></div>
+                    </div>
+                    <div>
+                        <span class="status-pill status-rule">${item.quality_risk_label || 'Demo quality signal pending'}</span>
+                    </div>
+                    <div class="insight-card">
+                        <div class="fw-bold">${item.buyer_segment}</div>
+                        <div class="small text-muted">${item.suitability}</div>
+                    </div>
+                    <div class="small"><strong>Suggested buyer action:</strong> ${item.suggested_buyer_action}</div>
                 `;
-                target.appendChild(row);
+                target.appendChild(card);
             });
         });
 </script>
