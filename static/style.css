@@ -55,6 +55,7 @@ body {
 }
 
 .metric-card {
+    background: #ffffff;
     border: 1px solid #dfe7de;
     border-radius: 8px;
 }
@@ -106,6 +107,45 @@ body {
 
 .chart-panel {
     min-height: 320px;
+}
+
+.trust-card {
+    background: #ffffff;
+    border: 1px solid #dfe7de;
+    border-radius: 8px;
+    height: 100%;
+}
+
+.trust-card h6 {
+    color: var(--krishi-slate);
+    font-weight: 700;
+}
+
+.audit-row {
+    background: #ffffff;
+    border: 1px solid #dfe7de;
+    border-left: 5px solid var(--krishi-blue);
+    border-radius: 8px;
+    padding: 0.9rem;
+}
+
+.audit-row.priority-high {
+    border-left-color: var(--krishi-red);
+}
+
+.audit-row.priority-medium {
+    border-left-color: var(--krishi-amber);
+}
+
+.platform-hero {
+    background: #ffffff;
+    border: 1px solid #dfe7de;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.table-fixed {
+    min-width: 760px;
 }
 
 canvas {

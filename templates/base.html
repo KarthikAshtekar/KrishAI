@@ -35,6 +35,21 @@
                             <i class="bi bi-graph-up"></i> IoT Monitoring
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.url.path == '/farmer-dashboard' %}active{% endif %}" href="/farmer-dashboard">
+                            <i class="bi bi-person-lines-fill"></i> Farmer
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.url.path == '/marketplace' %}active{% endif %}" href="/marketplace">
+                            <i class="bi bi-shop"></i> Marketplace
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.url.path == '/community-dashboard' %}active{% endif %}" href="/community-dashboard">
+                            <i class="bi bi-people"></i> Community
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>

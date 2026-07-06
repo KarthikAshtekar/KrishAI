@@ -13,7 +13,13 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
-from decision_engine import answer_farmer_question, build_decision_card, detect_iot_anomalies
+from decision_engine import (
+    answer_farmer_question,
+    build_decision_card,
+    detect_iot_anomalies,
+    sample_community_summary,
+    sample_marketplace_listings,
+)
 from ml_services import KrishiModelService, VALID_CROP_TYPES, VALID_SOIL_TYPES
 
 
@@ -212,6 +218,7 @@ def create_decision_card(payload: DecisionCardInput | None = None) -> dict[str, 
         price_result=price_result,
         sensor_feeds=sensor_feeds,
         farmer_profile=payload.farmer_profile,
+        marketplace_matches=sample_marketplace_listings(),
     )
     decision_card["input_mode"] = (payload.farmer_profile or {}).get("profile_mode", "user supplied inputs")
     decision_card["errors"] = errors
@@ -240,6 +247,21 @@ async def get_dashboard(request: Request):
 @app.get("/decision-intelligence", response_class=HTMLResponse)
 async def get_decision_intelligence(request: Request):
     return templates.TemplateResponse(request, "decision.html")
+
+
+@app.get("/farmer-dashboard", response_class=HTMLResponse)
+async def get_farmer_dashboard(request: Request):
+    return templates.TemplateResponse(request, "farmer_dashboard.html")
+
+
+@app.get("/marketplace", response_class=HTMLResponse)
+async def get_marketplace(request: Request):
+    return templates.TemplateResponse(request, "marketplace.html")
+
+
+@app.get("/community-dashboard", response_class=HTMLResponse)
+async def get_community_dashboard(request: Request):
+    return templates.TemplateResponse(request, "community_dashboard.html")
 
 
 @app.get("/disease-prediction", response_class=HTMLResponse)
@@ -329,6 +351,30 @@ async def get_decision_card():
 @app.post("/api/decision-card", response_class=JSONResponse)
 async def post_decision_card(payload: DecisionCardInput):
     return create_decision_card(payload)
+
+
+@app.get("/api/automation-log", response_class=JSONResponse)
+async def get_automation_log():
+    card = LAST_DECISION_CARD or create_decision_card()
+    return {
+        "status": "active",
+        "source": "Decision card workflow automation",
+        "automation_log": card.get("automation_log", []),
+    }
+
+
+@app.get("/api/marketplace/listings", response_class=JSONResponse)
+async def get_marketplace_listings():
+    return {
+        "status": "Demo data",
+        "limitations": "Marketplace listings are sample data until real buyer/farmer records are connected.",
+        "listings": sample_marketplace_listings(),
+    }
+
+
+@app.get("/api/community/summary", response_class=JSONResponse)
+async def get_community_summary():
+    return sample_community_summary()
 
 
 @app.post("/api/assistant", response_class=JSONResponse)

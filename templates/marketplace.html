@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Krishi Connect - Marketplace{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-12">
+        <div class="platform-hero">
+            <div class="page-kicker">Buyer / marketplace dashboard</div>
+            <h1 class="h3 mb-2">Krishi Connect: Agricultural Decision Intelligence Platform</h1>
+            <p class="mb-3 text-muted">Connecting farm data, AI models, IoT signals, and market intelligence for better rural decisions.</p>
+            <span class="status-pill status-demo">Demo data</span>
+            <span class="status-pill status-prototype">Prototype marketplace</span>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <section class="decision-summary p-4">
+            <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start">
+                <div>
+                    <h2 class="h4">Crop Availability and Buyer Matches</h2>
+                    <p class="text-muted mb-0">These listings are sample records until real farmer/buyer data is connected.</p>
+                </div>
+                <span class="status-pill status-demo">Sample marketplace data</span>
+            </div>
+            <div class="table-responsive mt-3">
+                <table class="table table-hover align-middle table-fixed">
+                    <thead>
+                        <tr>
+                            <th>Farmer / Village</th>
+                            <th>Crop</th>
+                            <th>Expected Quantity</th>
+                            <th>Harvest Window</th>
+                            <th>Buyer Segment</th>
+                            <th>Match</th>
+                            <th>Suggested Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="marketRows">
+                        <tr><td colspan="7">Loading marketplace data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    fetch('/api/marketplace/listings')
+        .then(response => response.json())
+        .then(data => {
+            const target = document.getElementById('marketRows');
+            target.innerHTML = '';
+            data.listings.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${item.farmer_name}</strong><br><small>${item.village}</small></td>
+                    <td>${item.crop}</td>
+                    <td>${item.expected_quantity}</td>
+                    <td>${item.harvest_window}</td>
+                    <td>${item.buyer_segment}</td>
+                    <td><span class="badge text-bg-success">${item.match_score}</span><br><small>${item.suitability}</small></td>
+                    <td>${item.suggested_buyer_action}</td>
+                `;
+                target.appendChild(row);
+            });
+        });
+</script>
+{% endblock %}

@@ -5,17 +5,19 @@
 {% block content %}
 <div class="row g-4">
     <div class="col-12">
-        <div class="decision-summary p-4">
+        <div class="platform-hero">
             <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start">
                 <div>
                     <div class="page-kicker">Agriculture and rural decision intelligence</div>
-                    <h2 class="h3 mb-2">Farmer Decision Card</h2>
-                    <p class="mb-0 text-muted">Combines crop and fertilizer models, IoT anomaly rules, price outlook, and workflow alerts into one action-oriented card.</p>
+                    <h1 class="h3 mb-2">Krishi Connect: Agricultural Decision Intelligence Platform</h1>
+                    <p class="mb-0 text-muted">Connecting farm data, AI models, IoT signals, and market intelligence for better rural decisions.</p>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
-                    <span class="status-pill status-model">Model-based where available</span>
-                    <span class="status-pill status-rule">Rule-based alerts</span>
-                    <span class="status-pill status-demo">Demo price fallback</span>
+                    <span class="status-pill status-model">Model-based</span>
+                    <span class="status-pill status-rule">Rule-based</span>
+                    <span class="status-pill status-rule">Real-time IoT</span>
+                    <span class="status-pill status-demo">Demo data</span>
+                    <span class="status-pill status-prototype">Disabled prototype</span>
                 </div>
             </div>
         </div>
@@ -94,6 +96,31 @@
             </div>
             <div class="card-body" id="workflowAlerts">
                 Loading workflow rules...
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h4 class="mb-0"><i class="bi bi-shield-check"></i> Explanation & Trust</h4>
+            </div>
+            <div class="card-body">
+                <div class="row g-3" id="explanationTrust">
+                    <div class="col-12 text-muted">Loading explanation cards...</div>
+                </div>
+                <p class="small text-muted mt-3 mb-0">SHAP/model-level explanations are future scope until stable model pipelines are saved.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h4 class="mb-0"><i class="bi bi-list-check"></i> Decision Audit Trail</h4>
+            </div>
+            <div class="card-body" id="automationLog">
+                Loading automation log...
             </div>
         </div>
     </div>
@@ -182,9 +209,55 @@
                 </div>
                 <div>${workflow.alert_message}</div>
                 <div class="small text-muted">${workflow.recommended_action}</div>
-                <div class="small">Stakeholder: ${workflow.stakeholder}</div>
+                <div class="small">Stakeholder: ${workflow.stakeholder_affected || workflow.stakeholder}</div>
+                <div class="small">Source: ${workflow.data_source || 'Not available'} | Status: ${workflow.status || 'Open'}</div>
             `;
             target.appendChild(item);
+        });
+    }
+
+    function renderTrust(cards) {
+        const target = document.getElementById('explanationTrust');
+        target.innerHTML = '';
+        cards.forEach(card => {
+            const col = document.createElement('div');
+            col.className = 'col-md-6';
+            col.innerHTML = `
+                <div class="trust-card p-3">
+                    <div class="d-flex justify-content-between gap-2 mb-2">
+                        <h6 class="mb-0">${card.title}</h6>
+                        <span class="status-pill ${card.basis.includes('demo') ? 'status-demo' : card.basis.includes('rule') ? 'status-rule' : 'status-model'}">${card.basis}</span>
+                    </div>
+                    <p class="mb-2">${card.why}</p>
+                    <div class="small"><strong>Main factors:</strong> ${(card.main_factors || []).join('; ')}</div>
+                    <div class="small"><strong>Positive factors:</strong> ${(card.positive_factors || []).join('; ') || 'Not available'}</div>
+                    <div class="small"><strong>Risk factors:</strong> ${(card.risk_factors || []).join('; ') || 'Not available'}</div>
+                    <div class="small"><strong>Reliability:</strong> ${card.confidence}</div>
+                    <div class="small text-muted"><strong>Data source:</strong> ${card.data_source}</div>
+                </div>
+            `;
+            target.appendChild(col);
+        });
+    }
+
+    function renderAutomationLog(items) {
+        const target = document.getElementById('automationLog');
+        target.innerHTML = '';
+        items.forEach(item => {
+            const row = document.createElement('div');
+            const priorityClass = (item.priority || '').toLowerCase();
+            row.className = `audit-row mb-3 priority-${priorityClass}`;
+            row.innerHTML = `
+                <div class="d-flex flex-wrap justify-content-between gap-2">
+                    <strong>${item.trigger}</strong>
+                    <span class="badge text-bg-secondary">${item.status || 'Open'}</span>
+                </div>
+                <div>${item.condition}</div>
+                <div class="small text-muted">Action: ${item.recommended_action}</div>
+                <div class="small">Severity: ${item.severity || 'Info'} | Stakeholder: ${item.stakeholder_affected || item.stakeholder}</div>
+                <div class="small">Source: ${item.data_source || 'Not available'} | Time: ${item.timestamp || 'Not available'}</div>
+            `;
+            target.appendChild(row);
         });
     }
 
@@ -203,6 +276,8 @@
                 document.getElementById('decisionBuyer').textContent = card.buyer_market_suggestion;
                 renderAlerts(card.alerts || []);
                 renderWorkflows(card.workflow_alerts || []);
+                renderTrust(card.explanation_trust || []);
+                renderAutomationLog(card.automation_log || []);
             })
             .catch(error => {
                 document.getElementById('decisionAlerts').textContent = 'Unable to load decision card.';
@@ -230,7 +305,12 @@
         .then(result => {
             const answer = document.createElement('div');
             answer.className = 'assistant-message';
-            answer.innerHTML = `<strong>Assistant:</strong> ${result.answer}<br><small class="text-muted">${result.basis}</small>`;
+            answer.innerHTML = `
+                <strong>Assistant:</strong> ${result.answer}
+                <br><small class="text-muted">Intent: ${result.intent} | Confidence: ${result.confidence}</small>
+                <br><small class="text-muted">Action: ${result.recommended_action}</small>
+                <br><small class="text-muted">Data used: ${(result.data_used || []).join('; ') || 'Not available'}</small>
+            `;
             log.appendChild(answer);
             log.scrollTop = log.scrollHeight;
         })

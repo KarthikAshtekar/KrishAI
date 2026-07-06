@@ -74,9 +74,20 @@ def _crop_explanation(inputs: dict[str, float], prediction: str) -> dict[str, An
         f"Temperature is {inputs['temperature']:.1f} C",
         f"Rainfall is {inputs['rainfall']:.1f} mm",
     ]
+    positive_factors = [
+        factor
+        for factor in factors
+        if "moderate" in factor.lower() or "pH is" in factor or "Temperature" in factor
+    ]
+    risk_factors = [factor for factor in factors if "low" in factor.lower() or "high" in factor.lower()]
     return {
         "basis": "model-based",
         "main_factors": factors,
+        "positive_factors": positive_factors or ["Input values were accepted by the trained crop model."],
+        "risk_factors": risk_factors or ["No major rule-level nutrient imbalance was detected."],
+        "confidence": "Moderate",
+        "reliability_label": "Model-based recommendation; no SHAP/probability explanation is configured yet.",
+        "data_source": "User-entered soil nutrients, pH, temperature, humidity, rainfall, and saved crop model",
         "why": (
             f"The Random Forest crop model selected {prediction} from soil nutrients, "
             "temperature, humidity, pH, and rainfall."
@@ -96,9 +107,17 @@ def _fertilizer_explanation(inputs: dict[str, Any], prediction: str) -> dict[str
         f"Soil type is {inputs['soil_type']}",
         f"Crop type is {inputs['crop_type']}",
     ]
+    risk_factors = [factor for factor in factors if "low" in factor.lower() or "high" in factor.lower()]
     return {
         "basis": "model-based",
         "main_factors": factors,
+        "positive_factors": [
+            f"Soil type and crop type are both supported: {inputs['soil_type']} / {inputs['crop_type']}",
+        ],
+        "risk_factors": risk_factors or ["No major rule-level nutrient imbalance was detected."],
+        "confidence": "Moderate",
+        "reliability_label": "Model-based recommendation using saved encoders; moisture defaults to 45 if not supplied.",
+        "data_source": "User-entered N/P/K, soil type, crop type, weather inputs, and saved fertilizer model",
         "why": (
             f"The fertilizer classifier recommends {prediction} using nutrient levels, "
             "soil type, crop type, temperature, humidity, and a default moisture value."
@@ -300,6 +319,17 @@ class KrishiModelService:
                     f"Transparent seasonal factor for month {month}",
                     f"Simple year uplift factor for {year}",
                 ],
+                "positive_factors": [
+                    f"Reference price data exists for {crop_key}.",
+                    f"Outlook category is {outlook}.",
+                ],
+                "risk_factors": [
+                    "The fitted encoder/scaler used during XGBoost training was not saved.",
+                    "Local market quotes, storage costs, and quality grades are not included.",
+                ],
+                "confidence": "Low",
+                "reliability_label": "Demo fallback; not a true model inference.",
+                "data_source": "Crop_Price.csv reference data and transparent seasonal/year factors",
                 "why": (
                     "The saved XGBoost model requires engineered, one-hot encoded, and "
                     "scaled features, but the repo does not include the fitted encoder "
@@ -339,6 +369,11 @@ class KrishiModelService:
             "explanation": {
                 "basis": "prototype-disabled",
                 "main_factors": ["Model metadata is incomplete", "Random prediction is disabled"],
+                "positive_factors": ["The app avoids unsafe random disease labels."],
+                "risk_factors": ["Class labels and validated TensorFlow preprocessing are missing."],
+                "confidence": "Unavailable",
+                "reliability_label": "Disabled prototype until model metadata is validated.",
+                "data_source": "Uploaded image metadata only; no disease inference is performed.",
                 "why": "The platform avoids presenting unvalidated random labels as real AI output.",
                 "what_would_change": "Validated class labels, preprocessing, and test images would enable real inference.",
             },

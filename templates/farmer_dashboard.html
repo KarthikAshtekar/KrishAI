@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Krishi Connect - Farmer Dashboard{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-12">
+        <div class="platform-hero">
+            <div class="page-kicker">Farmer dashboard</div>
+            <h1 class="h3 mb-2">Krishi Connect: Agricultural Decision Intelligence Platform</h1>
+            <p class="mb-3 text-muted">Connecting farm data, AI models, IoT signals, and market intelligence for better rural decisions.</p>
+            <div class="d-flex flex-wrap gap-2">
+                <span class="status-pill status-model">Model-based</span>
+                <span class="status-pill status-rule">Real-time IoT</span>
+                <span class="status-pill status-rule">Rule-based alerts</span>
+                <span class="status-pill status-demo">Demo price fallback</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <section class="decision-summary p-4 h-100">
+            <h2 class="h4">Today's Recommended Action</h2>
+            <p class="lead" id="todayAction">Loading...</p>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="metric-card p-3">
+                        <div class="metric-label">Crop</div>
+                        <div class="metric-value" id="farmerCrop">Loading</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card p-3">
+                        <div class="metric-label">Fertilizer</div>
+                        <div class="metric-value" id="farmerFertilizer">Loading</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card p-3">
+                        <div class="metric-label">Risk</div>
+                        <div class="metric-value" id="farmerRisk">Loading</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card p-3">
+                        <div class="metric-label">Price</div>
+                        <div class="metric-value" id="farmerPrice">Loading</div>
+                    </div>
+                </div>
+            </div>
+            <hr>
+            <h3 class="h5">IoT Status</h3>
+            <p id="iotStatus" class="mb-0 text-muted">Loading sensor status...</p>
+        </section>
+    </div>
+
+    <div class="col-lg-4">
+        <section class="decision-summary p-4 h-100">
+            <h2 class="h4">Active Alerts</h2>
+            <div id="farmerAlerts">Loading alerts...</div>
+        </section>
+    </div>
+
+    <div class="col-lg-7">
+        <section class="decision-summary p-4 h-100">
+            <h2 class="h4">Explanation & Trust</h2>
+            <div id="farmerTrust">Loading explanations...</div>
+        </section>
+    </div>
+
+    <div class="col-lg-5">
+        <section class="decision-summary p-4 h-100">
+            <h2 class="h4">Assistant</h2>
+            <div class="assistant-log mb-3" id="farmerAssistantLog">
+                <div class="assistant-message text-muted">Try: What should I do today?</div>
+            </div>
+            <form id="farmerAssistantForm" class="d-flex gap-2">
+                <input class="form-control" id="farmerAssistantQuestion" placeholder="What alerts do I have today?" required>
+                <button class="btn btn-success" type="submit"><i class="bi bi-send"></i></button>
+            </form>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function renderAlertList(alerts) {
+        const target = document.getElementById('farmerAlerts');
+        target.innerHTML = '';
+        alerts.forEach(alert => {
+            const item = document.createElement('div');
+            item.className = 'audit-row mb-3';
+            item.innerHTML = `
+                <strong>${alert.severity}</strong>
+                <div>${alert.message}</div>
+                <small class="text-muted">${alert.recommended_action}</small>
+            `;
+            target.appendChild(item);
+        });
+    }
+
+    function renderTrustList(cards) {
+        const target = document.getElementById('farmerTrust');
+        target.innerHTML = '';
+        cards.slice(0, 4).forEach(card => {
+            const item = document.createElement('div');
+            item.className = 'mb-3';
+            item.innerHTML = `
+                <div class="d-flex justify-content-between gap-2">
+                    <strong>${card.title}</strong>
+                    <span class="status-pill ${card.basis.includes('demo') ? 'status-demo' : card.basis.includes('rule') ? 'status-rule' : 'status-model'}">${card.basis}</span>
+                </div>
+                <div>${card.why}</div>
+                <small class="text-muted">Reliability: ${card.confidence} | Source: ${card.data_source}</small>
+            `;
+            target.appendChild(item);
+        });
+    }
+
+    function loadFarmerDashboard() {
+        fetch('/api/decision-card')
+            .then(response => response.json())
+            .then(card => {
+                document.getElementById('todayAction').textContent = card.final_recommended_action;
+                document.getElementById('farmerCrop').textContent = card.recommended_crop;
+                document.getElementById('farmerFertilizer').textContent = card.fertilizer_recommendation;
+                document.getElementById('farmerRisk').textContent = card.risk_level;
+                document.getElementById('farmerPrice').textContent = card.price_outlook;
+                const latest = card.latest_sensor_reading || {};
+                document.getElementById('iotStatus').textContent = `Moisture: ${latest.soil_moisture ?? 'N/A'}, Temperature: ${latest.temperature ?? 'N/A'}, Humidity: ${latest.humidity ?? 'N/A'}`;
+                renderAlertList(card.alerts || []);
+                renderTrustList(card.explanation_trust || []);
+            });
+    }
+
+    document.getElementById('farmerAssistantForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const questionInput = document.getElementById('farmerAssistantQuestion');
+        const log = document.getElementById('farmerAssistantLog');
+        const question = questionInput.value;
+        log.insertAdjacentHTML('beforeend', `<div class="assistant-message"><strong>You:</strong> ${question}</div>`);
+        questionInput.value = '';
+        fetch('/api/assistant', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({question})
+        })
+        .then(response => response.json())
+        .then(result => {
+            log.insertAdjacentHTML('beforeend', `<div class="assistant-message"><strong>Assistant:</strong> ${result.answer}<br><small class="text-muted">${result.intent} | ${result.confidence}</small></div>`);
+            log.scrollTop = log.scrollHeight;
+        });
+    });
+
+    loadFarmerDashboard();
+</script>
+{% endblock %}
