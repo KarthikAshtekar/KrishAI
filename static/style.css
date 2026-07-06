@@ -1,0 +1,113 @@
+:root {
+    --krishi-green: #198754;
+    --krishi-green-dark: #12643e;
+    --krishi-blue: #0d6efd;
+    --krishi-amber: #b7791f;
+    --krishi-red: #b02a37;
+    --krishi-slate: #334155;
+    --krishi-bg: #f6f8f5;
+}
+
+body {
+    background: var(--krishi-bg);
+    color: #1f2933;
+}
+
+.navbar-brand {
+    font-weight: 700;
+}
+
+.page-kicker {
+    color: var(--krishi-green-dark);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+
+.status-pill {
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: 0.76rem;
+    font-weight: 700;
+    gap: 0.35rem;
+    padding: 0.28rem 0.62rem;
+}
+
+.status-model {
+    background: #e8f5ee;
+    color: var(--krishi-green-dark);
+}
+
+.status-rule {
+    background: #e7f0ff;
+    color: #0b4aa2;
+}
+
+.status-demo {
+    background: #fff4df;
+    color: #7a4d05;
+}
+
+.status-prototype {
+    background: #f1f5f9;
+    color: var(--krishi-slate);
+}
+
+.metric-card {
+    border: 1px solid #dfe7de;
+    border-radius: 8px;
+}
+
+.metric-card .metric-label {
+    color: #64748b;
+    font-size: 0.84rem;
+}
+
+.metric-card .metric-value {
+    font-size: 1.35rem;
+    font-weight: 700;
+}
+
+.alert-critical {
+    border-left: 5px solid var(--krishi-red);
+}
+
+.alert-warning {
+    border-left: 5px solid var(--krishi-amber);
+}
+
+.alert-info {
+    border-left: 5px solid var(--krishi-blue);
+}
+
+.decision-summary {
+    background: #ffffff;
+    border: 1px solid #dfe7de;
+    border-radius: 8px;
+}
+
+.assistant-log {
+    background: #ffffff;
+    border: 1px solid #dfe7de;
+    border-radius: 8px;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.assistant-message {
+    border-bottom: 1px solid #edf2ef;
+    padding: 0.75rem;
+}
+
+.assistant-message:last-child {
+    border-bottom: 0;
+}
+
+.chart-panel {
+    min-height: 320px;
+}
+
+canvas {
+    max-width: 100%;
+}

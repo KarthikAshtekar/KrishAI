@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Krishi Connect - Decision Intelligence{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-12">
+        <div class="decision-summary p-4">
+            <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start">
+                <div>
+                    <div class="page-kicker">Agriculture and rural decision intelligence</div>
+                    <h2 class="h3 mb-2">Farmer Decision Card</h2>
+                    <p class="mb-0 text-muted">Combines crop and fertilizer models, IoT anomaly rules, price outlook, and workflow alerts into one action-oriented card.</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="status-pill status-model">Model-based where available</span>
+                    <span class="status-pill status-rule">Rule-based alerts</span>
+                    <span class="status-pill status-demo">Demo price fallback</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="bi bi-clipboard-data"></i> Decision Card</h4>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="metric-card p-3">
+                            <div class="metric-label">Recommended Crop</div>
+                            <div class="metric-value" id="decisionCrop">Loading</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="metric-card p-3">
+                            <div class="metric-label">Fertilizer</div>
+                            <div class="metric-value" id="decisionFertilizer">Loading</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="metric-card p-3">
+                            <div class="metric-label">Risk Level</div>
+                            <div class="metric-value" id="decisionRisk">Loading</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="metric-card p-3">
+                            <div class="metric-label">Soil Moisture</div>
+                            <div class="metric-value" id="decisionMoisture">Loading</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="metric-card p-3">
+                            <div class="metric-label">Price Outlook</div>
+                            <div class="metric-value" id="decisionPrice">Loading</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="metric-card p-3">
+                            <div class="metric-label">Input Mode</div>
+                            <div class="metric-value fs-6" id="decisionMode">Loading</div>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <h5>Recommended Action</h5>
+                <p id="decisionAction" class="lead mb-3">Loading...</p>
+                <h5>Why this risk level?</h5>
+                <p id="decisionExplanation" class="mb-3 text-muted">Loading...</p>
+                <h5>Buyer / Market Suggestion</h5>
+                <p id="decisionBuyer" class="mb-0">Loading...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-warning">
+                <h4 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Active Alerts</h4>
+            </div>
+            <div class="card-body" id="decisionAlerts">
+                Loading alerts...
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-lightning-charge"></i> Workflow Automation</h4>
+            </div>
+            <div class="card-body" id="workflowAlerts">
+                Loading workflow rules...
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light">
+                <h4 class="mb-0"><i class="bi bi-chat-dots"></i> Farmer Assistant</h4>
+            </div>
+            <div class="card-body">
+                <div class="assistant-log mb-3" id="assistantLog">
+                    <div class="assistant-message text-muted">Ask about crop choice, irrigation, risk, fertilizer, price, or alerts.</div>
+                </div>
+                <form id="assistantForm" class="d-flex gap-2">
+                    <input class="form-control" id="assistantQuestion" placeholder="Should I irrigate today?" required>
+                    <button class="btn btn-success" type="submit"><i class="bi bi-send"></i></button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h4 class="mb-0"><i class="bi bi-people"></i> Stakeholder Snapshot</h4>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="metric-card p-3 h-100">
+                            <span class="status-pill status-model mb-2">Farmer</span>
+                            <p class="mb-0">Crop, fertilizer, irrigation, risk, and sell/hold decisions from the current decision card.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="metric-card p-3 h-100">
+                            <span class="status-pill status-demo mb-2">Buyer Connect Prototype</span>
+                            <p class="mb-0">Buyer matching is represented as a decision suggestion. Live marketplace listings are future scope.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="metric-card p-3 h-100">
+                            <span class="status-pill status-demo mb-2">FPO / Community Demo</span>
+                            <p class="mb-0">Community aggregation can prioritize farms with moisture, heat, disease-weather, or sensor-quality alerts.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function alertClass(severity) {
+        if (severity === 'Critical') return 'alert-critical';
+        if (severity === 'Warning') return 'alert-warning';
+        return 'alert-info';
+    }
+
+    function renderAlerts(alerts) {
+        const target = document.getElementById('decisionAlerts');
+        target.innerHTML = '';
+        alerts.forEach(alert => {
+            const item = document.createElement('div');
+            item.className = `p-3 mb-3 bg-white border ${alertClass(alert.severity)}`;
+            item.innerHTML = `
+                <div class="fw-bold">${alert.severity}: ${alert.message}</div>
+                <div class="small text-muted">${alert.recommended_action}</div>
+            `;
+            target.appendChild(item);
+        });
+    }
+
+    function renderWorkflows(workflows) {
+        const target = document.getElementById('workflowAlerts');
+        target.innerHTML = '';
+        workflows.forEach(workflow => {
+            const item = document.createElement('div');
+            item.className = 'p-3 mb-3 bg-white border rounded';
+            item.innerHTML = `
+                <div class="d-flex justify-content-between gap-2">
+                    <strong>${workflow.trigger}</strong>
+                    <span class="badge text-bg-secondary">${workflow.priority}</span>
+                </div>
+                <div>${workflow.alert_message}</div>
+                <div class="small text-muted">${workflow.recommended_action}</div>
+                <div class="small">Stakeholder: ${workflow.stakeholder}</div>
+            `;
+            target.appendChild(item);
+        });
+    }
+
+    function loadDecisionCard() {
+        fetch('/api/decision-card')
+            .then(response => response.json())
+            .then(card => {
+                document.getElementById('decisionCrop').textContent = card.recommended_crop;
+                document.getElementById('decisionFertilizer').textContent = card.fertilizer_recommendation;
+                document.getElementById('decisionRisk').textContent = card.risk_level;
+                document.getElementById('decisionMoisture').textContent = card.soil_moisture_status;
+                document.getElementById('decisionPrice').textContent = card.price_outlook;
+                document.getElementById('decisionMode').textContent = card.input_mode;
+                document.getElementById('decisionAction').textContent = card.final_recommended_action;
+                document.getElementById('decisionExplanation').textContent = card.explanation;
+                document.getElementById('decisionBuyer').textContent = card.buyer_market_suggestion;
+                renderAlerts(card.alerts || []);
+                renderWorkflows(card.workflow_alerts || []);
+            })
+            .catch(error => {
+                document.getElementById('decisionAlerts').textContent = 'Unable to load decision card.';
+                console.error(error);
+            });
+    }
+
+    document.getElementById('assistantForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const input = document.getElementById('assistantQuestion');
+        const question = input.value;
+        const log = document.getElementById('assistantLog');
+        const userMessage = document.createElement('div');
+        userMessage.className = 'assistant-message';
+        userMessage.innerHTML = `<strong>You:</strong> ${question}`;
+        log.appendChild(userMessage);
+        input.value = '';
+
+        fetch('/api/assistant', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({question})
+        })
+        .then(response => response.json())
+        .then(result => {
+            const answer = document.createElement('div');
+            answer.className = 'assistant-message';
+            answer.innerHTML = `<strong>Assistant:</strong> ${result.answer}<br><small class="text-muted">${result.basis}</small>`;
+            log.appendChild(answer);
+            log.scrollTop = log.scrollHeight;
+        })
+        .catch(error => {
+            const answer = document.createElement('div');
+            answer.className = 'assistant-message text-danger';
+            answer.textContent = 'Assistant is unavailable.';
+            log.appendChild(answer);
+            console.error(error);
+        });
+    });
+
+    loadDecisionCard();
+</script>
+{% endblock %}
