@@ -23,6 +23,42 @@
         </div>
     </div>
 
+    <div class="col-12">
+        <div class="row g-3">
+            <div class="col-lg-4">
+                <div class="metric-card p-3 h-100">
+                    <div class="metric-label">Recommended Action</div>
+                    <div class="metric-value fs-5" id="topAction">Loading</div>
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-2">
+                <div class="metric-card p-3 h-100">
+                    <div class="metric-label">Risk Level</div>
+                    <div class="metric-value" id="topRisk">Loading</div>
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-3">
+                <div class="metric-card p-3 h-100">
+                    <div class="metric-label">Data Sources Used</div>
+                    <div class="small fw-semibold" id="topSources">Loading</div>
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-3">
+                <div class="metric-card p-3 h-100">
+                    <div class="metric-label">Confidence / Reliability</div>
+                    <div class="small fw-semibold" id="topReliability">Loading</div>
+                </div>
+            </div>
+        </div>
+        <div class="decision-summary p-3 mt-3">
+            <div class="d-flex flex-wrap justify-content-between gap-2">
+                <strong>Main Alerts</strong>
+                <span class="status-pill status-rule" id="topAlertCount">Loading</span>
+            </div>
+            <div class="small text-muted mt-2" id="topAlerts">Loading alert summary...</div>
+        </div>
+    </div>
+
     <div class="col-lg-8">
         <div class="card shadow-sm h-100">
             <div class="card-header bg-success text-white">
@@ -134,6 +170,13 @@
                 <div class="assistant-log mb-3" id="assistantLog">
                     <div class="assistant-message text-muted">Ask about crop choice, irrigation, risk, fertilizer, price, or alerts.</div>
                 </div>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <button class="btn btn-sm btn-outline-success quick-question" type="button" onclick="askAssistant('What should I do today?')">What should I do today?</button>
+                    <button class="btn btn-sm btn-outline-success quick-question" type="button" onclick="askAssistant('Should I irrigate today?')">Should I irrigate today?</button>
+                    <button class="btn btn-sm btn-outline-success quick-question" type="button" onclick="askAssistant('Why is my farm at risk?')">Why is my farm at risk?</button>
+                    <button class="btn btn-sm btn-outline-success quick-question" type="button" onclick="askAssistant('Which crop should I grow?')">Which crop should I grow?</button>
+                    <button class="btn btn-sm btn-outline-success quick-question" type="button" onclick="askAssistant('What alerts do I have?')">What alerts do I have?</button>
+                </div>
                 <form id="assistantForm" class="d-flex gap-2">
                     <input class="form-control" id="assistantQuestion" placeholder="Should I irrigate today?" required>
                     <button class="btn btn-success" type="submit"><i class="bi bi-send"></i></button>
@@ -232,6 +275,7 @@
                     <div class="small"><strong>Main factors:</strong> ${(card.main_factors || []).join('; ')}</div>
                     <div class="small"><strong>Positive factors:</strong> ${(card.positive_factors || []).join('; ') || 'Not available'}</div>
                     <div class="small"><strong>Risk factors:</strong> ${(card.risk_factors || []).join('; ') || 'Not available'}</div>
+                    <div class="small"><strong>Limitations:</strong> ${(card.limitations || []).join('; ') || 'None listed'}</div>
                     <div class="small"><strong>Reliability:</strong> ${card.confidence}</div>
                     <div class="small text-muted"><strong>Data source:</strong> ${card.data_source}</div>
                 </div>
@@ -265,6 +309,16 @@
         fetch('/api/decision-card')
             .then(response => response.json())
             .then(card => {
+                const trustCards = card.explanation_trust || [];
+                const sources = [...new Set(trustCards.map(item => item.data_source).filter(Boolean))].slice(0, 4);
+                const reliability = trustCards.map(item => `${item.title}: ${item.confidence}`).join(' | ');
+                const mainAlerts = (card.alerts || []).slice(0, 3).map(alert => `${alert.severity}: ${alert.message}`);
+                document.getElementById('topAction').textContent = card.final_recommended_action;
+                document.getElementById('topRisk').textContent = card.risk_level;
+                document.getElementById('topSources').textContent = sources.join('; ') || 'Not available';
+                document.getElementById('topReliability').textContent = reliability || 'Not available';
+                document.getElementById('topAlertCount').textContent = `${(card.alerts || []).length} active`;
+                document.getElementById('topAlerts').textContent = mainAlerts.join(' | ') || 'No alert summary available.';
                 document.getElementById('decisionCrop').textContent = card.recommended_crop;
                 document.getElementById('decisionFertilizer').textContent = card.fertilizer_recommendation;
                 document.getElementById('decisionRisk').textContent = card.risk_level;
@@ -276,7 +330,7 @@
                 document.getElementById('decisionBuyer').textContent = card.buyer_market_suggestion;
                 renderAlerts(card.alerts || []);
                 renderWorkflows(card.workflow_alerts || []);
-                renderTrust(card.explanation_trust || []);
+                renderTrust(trustCards);
                 renderAutomationLog(card.automation_log || []);
             })
             .catch(error => {
@@ -285,16 +339,12 @@
             });
     }
 
-    document.getElementById('assistantForm').addEventListener('submit', function(event) {
-        event.preventDefault();
-        const input = document.getElementById('assistantQuestion');
-        const question = input.value;
+    function askAssistant(question) {
         const log = document.getElementById('assistantLog');
         const userMessage = document.createElement('div');
         userMessage.className = 'assistant-message';
         userMessage.innerHTML = `<strong>You:</strong> ${question}`;
         log.appendChild(userMessage);
-        input.value = '';
 
         fetch('/api/assistant', {
             method: 'POST',
@@ -306,10 +356,11 @@
             const answer = document.createElement('div');
             answer.className = 'assistant-message';
             answer.innerHTML = `
-                <strong>Assistant:</strong> ${result.answer}
-                <br><small class="text-muted">Intent: ${result.intent} | Confidence: ${result.confidence}</small>
-                <br><small class="text-muted">Action: ${result.recommended_action}</small>
+                <strong>Answer:</strong> ${result.answer}
+                <br><small class="text-muted">Recommended action: ${result.recommended_action}</small>
                 <br><small class="text-muted">Data used: ${(result.data_used || []).join('; ') || 'Not available'}</small>
+                <br><small class="text-muted">Confidence: ${result.confidence}</small>
+                <br><small class="text-muted">Limitation: ${(result.limitations || []).join('; ') || 'None listed'}</small>
             `;
             log.appendChild(answer);
             log.scrollTop = log.scrollHeight;
@@ -321,6 +372,14 @@
             log.appendChild(answer);
             console.error(error);
         });
+    }
+
+    document.getElementById('assistantForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const input = document.getElementById('assistantQuestion');
+        const question = input.value;
+        input.value = '';
+        askAssistant(question);
     });
 
     loadDecisionCard();

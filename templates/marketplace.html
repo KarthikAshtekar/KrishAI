@@ -18,10 +18,13 @@
         <section class="decision-summary p-4">
             <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start">
                 <div>
-                    <h2 class="h4">Crop Availability and Buyer Matches</h2>
-                    <p class="text-muted mb-0">These listings are sample records until real farmer/buyer data is connected.</p>
+                    <h2 class="h4">Buyer-Connect Prototype Listings</h2>
+                    <p class="text-muted mb-0">Demo marketplace data showing how crop supply, harvest timing, buyer fit, and risk labels can support outreach.</p>
                 </div>
-                <span class="status-pill status-demo">Sample marketplace data</span>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="status-pill status-demo">Demo marketplace data</span>
+                    <span class="status-pill status-prototype">Not a live trading system</span>
+                </div>
             </div>
             <div class="table-responsive mt-3">
                 <table class="table table-hover align-middle table-fixed">
@@ -31,8 +34,8 @@
                             <th>Crop</th>
                             <th>Expected Quantity</th>
                             <th>Harvest Window</th>
-                            <th>Buyer Segment</th>
-                            <th>Match</th>
+                            <th>Quality / Risk Label</th>
+                            <th>Match Score</th>
                             <th>Suggested Action</th>
                         </tr>
                     </thead>
@@ -60,9 +63,9 @@
                     <td>${item.crop}</td>
                     <td>${item.expected_quantity}</td>
                     <td>${item.harvest_window}</td>
-                    <td>${item.buyer_segment}</td>
-                    <td><span class="badge text-bg-success">${item.match_score}</span><br><small>${item.suitability}</small></td>
-                    <td>${item.suggested_buyer_action}</td>
+                    <td><span class="status-pill status-rule">${item.quality_risk_label || 'Demo quality signal pending'}</span></td>
+                    <td><span class="badge text-bg-success">${item.match_score}%</span><br><small>${item.suitability}</small></td>
+                    <td><strong>${item.buyer_segment}</strong><br><small>${item.suggested_buyer_action}</small></td>
                 `;
                 target.appendChild(row);
             });

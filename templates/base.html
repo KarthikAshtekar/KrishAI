@@ -59,9 +59,22 @@
         {% block content %}{% endblock %}
     </div>
 
-    <footer class="bg-light text-center text-lg-start mt-5">
-        <div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.05);">
-            Krishi Connect - agricultural decision intelligence prototype
+    <footer class="status-footer mt-5">
+        <div class="container py-4">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <strong>Prototype deployed on Google Cloud Run</strong>
+                    <div class="text-muted small">Working decision intelligence MVP for hackathon validation.</div>
+                </div>
+                <div class="col-md-4">
+                    <strong>Real-time IoT via ThingSpeak</strong>
+                    <div class="text-muted small">ML models: Crop and fertilizer recommendation.</div>
+                </div>
+                <div class="col-md-4">
+                    <strong>Demo modules: Marketplace, community aggregation, price outlook</strong>
+                    <div class="text-muted small">Disabled until validation: Disease detection.</div>
+                </div>
+            </div>
         </div>
     </footer>
 

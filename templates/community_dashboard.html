@@ -18,6 +18,11 @@
         <section class="decision-summary p-4">
             <h2 class="h4">Community Risk Snapshot</h2>
             <p id="communityInsight" class="lead">Loading community insight...</p>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <span class="status-pill status-demo">Demo community records</span>
+                <span class="status-pill status-rule">Rule-based aggregation</span>
+                <span class="status-pill status-prototype">FPO workflow prototype</span>
+            </div>
             <div class="row g-3">
                 <div class="col-md-3">
                     <div class="metric-card p-3">
@@ -47,17 +52,37 @@
         </section>
     </div>
 
-    <div class="col-lg-6">
+    <div class="col-lg-4">
+        <section class="decision-summary p-4 h-100">
+            <h2 class="h4">Most Recommended Crops</h2>
+            <p class="text-muted small">Prototype crop mix from monitored farmer records.</p>
+            <div id="recommendedCrops">Loading crop mix...</div>
+        </section>
+    </div>
+
+    <div class="col-lg-4">
         <section class="decision-summary p-4 h-100">
             <h2 class="h4">Expected Supply by Crop</h2>
+            <p class="text-muted small">Demo supply view for aggregation and buyer planning.</p>
             <div id="supplyList">Loading supply data...</div>
         </section>
     </div>
 
-    <div class="col-lg-6">
+    <div class="col-lg-4">
         <section class="decision-summary p-4 h-100">
-            <h2 class="h4">Suggested Community-Level Actions</h2>
+            <h2 class="h4">Suggested FPO Actions</h2>
+            <p class="text-muted small">Operational actions derived from the current demo alert mix.</p>
             <div id="communityActions">Loading actions...</div>
+        </section>
+    </div>
+
+    <div class="col-12">
+        <section class="decision-summary p-4">
+            <h2 class="h4">Community-Level Decision Recommendations</h2>
+            <p class="text-muted mb-3">Sample actions an FPO or local coordinator could take after reviewing the risk, crop, and supply signals.</p>
+            <div class="row g-3" id="communityRecommendations">
+                <div class="col-md-6">Loading community recommendations...</div>
+            </div>
         </section>
     </div>
 </div>
@@ -74,6 +99,12 @@
             document.getElementById('lowMoisture').textContent = data.farms_with_low_soil_moisture;
             document.getElementById('heatRisk').textContent = data.farms_under_heat_weather_risk;
 
+            const crops = document.getElementById('recommendedCrops');
+            crops.innerHTML = '';
+            (data.most_recommended_crops || []).forEach(([crop, count]) => {
+                crops.insertAdjacentHTML('beforeend', `<div class="audit-row mb-3"><strong>${crop}</strong><div>${count} monitored farmer(s)</div></div>`);
+            });
+
             const supply = document.getElementById('supplyList');
             supply.innerHTML = '';
             Object.entries(data.expected_supply_by_crop).forEach(([crop, quantity]) => {
@@ -84,6 +115,16 @@
             actions.innerHTML = '';
             data.suggested_community_actions.forEach(action => {
                 actions.insertAdjacentHTML('beforeend', `<div class="audit-row mb-3">${action}</div>`);
+            });
+
+            const recommendations = document.getElementById('communityRecommendations');
+            recommendations.innerHTML = '';
+            (data.community_decision_recommendations || data.suggested_community_actions || []).forEach(action => {
+                recommendations.insertAdjacentHTML('beforeend', `
+                    <div class="col-md-6">
+                        <div class="action-plan h-100">${action}</div>
+                    </div>
+                `);
             });
         });
 </script>

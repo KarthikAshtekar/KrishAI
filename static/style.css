@@ -144,6 +144,64 @@ body {
     padding: 1.5rem;
 }
 
+.hero-title {
+    color: #123524;
+    font-size: 2.25rem;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.hero-subtitle {
+    color: var(--krishi-green-dark);
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.value-card {
+    background: #ffffff;
+    border: 1px solid #dfe7de;
+    border-radius: 8px;
+    height: 100%;
+    padding: 1rem;
+}
+
+.value-card i {
+    color: var(--krishi-green-dark);
+    font-size: 1.5rem;
+}
+
+.demo-step {
+    background: #ffffff;
+    border: 1px solid #dfe7de;
+    border-radius: 8px;
+    color: inherit;
+    display: block;
+    height: 100%;
+    padding: 1rem;
+    text-decoration: none;
+}
+
+.demo-step:hover {
+    border-color: var(--krishi-green);
+    color: inherit;
+}
+
+.action-plan {
+    background: #f8fbf7;
+    border: 1px solid #dfe7de;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.quick-question {
+    white-space: normal;
+}
+
+.status-footer {
+    background: #ffffff;
+    border-top: 1px solid #dfe7de;
+}
+
 .table-fixed {
     min-width: 760px;
 }
