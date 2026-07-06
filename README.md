@@ -161,3 +161,4 @@ python -m py_compile app.py ml_services.py decision_engine.py
 - Add buyer listings, FPO aggregation, and real marketplace matching.
 - Add SHAP or another explainability method for model-backed recommendations.
 - Add authentication and role-specific dashboards.
+# KrishAI
