@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any
@@ -11,9 +12,12 @@ from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Upload
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
 
-from auth import create_firebase_session, new_csrf_token, validate_csrf
+from auth import Principal, create_firebase_session, get_current_principal, new_csrf_token, validate_csrf
 from config import AppSettings, get_settings
+from database import Base, engine, get_db
+from db_models import DecisionCardRecord
 from decision_engine import (
     answer_farmer_question,
     build_decision_card,
@@ -22,6 +26,13 @@ from decision_engine import (
     sample_marketplace_listings,
 )
 from ml_services import VALID_CROP_TYPES, VALID_SOIL_TYPES, KrishiModelService
+from repositories import (
+    create_audit_event,
+    create_decision_record,
+    get_latest_decision_record,
+    list_active_memberships,
+    upsert_user_identity,
+)
 from schemas import (
     AssistantInput,
     CropRecommendationInput,
@@ -39,9 +50,22 @@ load_dotenv(BASE_DIR / ".env")
 APPLICATION_SETTINGS = get_settings()
 STATIC_DIR.mkdir(exist_ok=True)
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    if (
+        APPLICATION_SETTINGS.auth_mode == "demo"
+        and not APPLICATION_SETTINGS.is_deployed
+        and APPLICATION_SETTINGS.database_url.startswith("sqlite")
+    ):
+        Base.metadata.create_all(engine)
+    yield
+
+
 app = FastAPI(
     title="Krishi Connect Decision Intelligence Platform",
     description="Agricultural decision intelligence APIs for recommendations, IoT alerts, and workflow cards.",
+    lifespan=lifespan,
 )
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
@@ -50,9 +74,6 @@ model_service = KrishiModelService()
 THINGSPEAK_CHANNEL_ID = os.getenv("THINGSPEAK_CHANNEL_ID", "2914283")
 THINGSPEAK_READ_API_KEY = os.getenv("THINGSPEAK_READ_API_KEY", "")
 THINGSPEAK_RESULTS = int(os.getenv("THINGSPEAK_RESULTS", "10"))
-
-LAST_DECISION_CARD: dict[str, Any] | None = None
-
 
 def _binary_status(value: Any) -> str | None:
     if value in (None, ""):
@@ -156,8 +177,7 @@ def default_decision_payload() -> DecisionCardInput:
     )
 
 
-def create_decision_card(payload: DecisionCardInput | None = None) -> dict[str, Any]:
-    global LAST_DECISION_CARD
+def build_decision_result(payload: DecisionCardInput | None = None) -> dict[str, Any]:
     payload = payload or default_decision_payload()
     sensor_feeds = safe_sensor_feeds()
 
@@ -194,12 +214,71 @@ def create_decision_card(payload: DecisionCardInput | None = None) -> dict[str, 
     )
     decision_card["input_mode"] = (payload.farmer_profile or {}).get("profile_mode", "user supplied inputs")
     decision_card["errors"] = errors
-    LAST_DECISION_CARD = decision_card
     return decision_card
 
 
+def persist_decision_card(
+    payload: DecisionCardInput | None,
+    *,
+    session: Session,
+    principal: Principal,
+    request_id: str | None,
+) -> dict[str, Any]:
+    normalized_payload = payload or default_decision_payload()
+    decision_card = build_decision_result(normalized_payload)
+    record = create_decision_record(
+        session,
+        tenant_id=principal.tenant_id,
+        created_by_user_id=principal.user_id,
+        request_id=request_id,
+        input_mode=decision_card["input_mode"],
+        input_payload=normalized_payload.model_dump(mode="json"),
+        result_payload=decision_card,
+        model_versions={
+            "crop": "bundled legacy pickle; runtime compatibility not revalidated",
+            "fertilizer": "bundled legacy pickle; runtime compatibility not revalidated",
+            "price": "demo lookup and rule-based outlook",
+        },
+    )
+    create_audit_event(
+        session,
+        tenant_id=principal.tenant_id,
+        user_id=principal.user_id,
+        request_id=request_id,
+        event_type="decision.created",
+        resource_type="decision_card",
+        resource_id=record.id,
+        metadata={"input_mode": record.input_mode},
+    )
+    return serialize_decision_record(record)
+
+
+def serialize_decision_record(record: DecisionCardRecord) -> dict[str, Any]:
+    result = dict(record.result_payload)
+    result.update(
+        {
+            "decision_id": record.id,
+            "created_at": record.created_at.isoformat(),
+            "input_mode": record.input_mode,
+        }
+    )
+    return result
+
+
+def latest_or_create_decision(
+    *,
+    session: Session,
+    principal: Principal,
+    request_id: str | None,
+) -> dict[str, Any]:
+    record = get_latest_decision_record(session, tenant_id=principal.tenant_id)
+    if record is not None:
+        return serialize_decision_record(record)
+    return persist_decision_card(None, session=session, principal=principal, request_id=request_id)
+
+
 @app.get("/", response_class=HTMLResponse)
-async def get_index(request: Request):
+async def get_index(request: Request, _principal: Annotated[Principal, Depends(get_current_principal)]):
     return templates.TemplateResponse(
         request,
         "index.html",
@@ -253,11 +332,32 @@ async def create_auth_session(
     payload: FirebaseSessionInput,
     request: Request,
     settings: Annotated[AppSettings, Depends(get_settings)],
+    session: Annotated[Session, Depends(get_db)],
 ):
     if settings.auth_mode != "firebase":
         raise HTTPException(status_code=409, detail="Firebase authentication is not configured")
     validate_csrf(request, settings)
     cookie, claims = create_firebase_session(payload.id_token, settings=settings)
+    identity_uid = str(claims.get("uid") or claims.get("sub") or "").strip()
+    if not identity_uid:
+        raise HTTPException(status_code=401, detail="Verified identity is missing a user ID")
+    user = upsert_user_identity(
+        session,
+        firebase_uid=identity_uid,
+        email=str(claims["email"]) if claims.get("email") else None,
+        display_name=str(claims["name"]) if claims.get("name") else None,
+    )
+    memberships = list_active_memberships(session, user_id=user.id)
+    if not memberships:
+        raise HTTPException(status_code=403, detail="Tenant membership required")
+    create_audit_event(
+        session,
+        tenant_id=memberships[0].tenant_id,
+        user_id=user.id,
+        request_id=getattr(request.state, "request_id", None),
+        event_type="auth.session_created",
+        metadata={"authentication_mode": "firebase"},
+    )
     response = JSONResponse({"status": "authenticated", "uid": claims.get("uid") or claims.get("sub")})
     response.set_cookie(
         settings.session_cookie_name,
@@ -275,8 +375,18 @@ async def create_auth_session(
 async def logout(
     request: Request,
     settings: Annotated[AppSettings, Depends(get_settings)],
+    session: Annotated[Session, Depends(get_db)],
+    principal: Annotated[Principal, Depends(get_current_principal)],
 ):
     validate_csrf(request, settings)
+    create_audit_event(
+        session,
+        tenant_id=principal.tenant_id,
+        user_id=principal.user_id,
+        request_id=getattr(request.state, "request_id", None),
+        event_type="auth.signed_out",
+        metadata={"authentication_mode": principal.authentication_mode},
+    )
     response = JSONResponse({"status": "signed_out"})
     response.delete_cookie(settings.session_cookie_name, path="/", secure=settings.cookie_secure, samesite="lax")
     response.delete_cookie(settings.csrf_cookie_name, path="/", secure=settings.cookie_secure, samesite="lax")
@@ -284,37 +394,49 @@ async def logout(
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
-async def get_dashboard(request: Request):
+async def get_dashboard(request: Request, _principal: Annotated[Principal, Depends(get_current_principal)]):
     return templates.TemplateResponse(request, "dashboard.html")
 
 
 @app.get("/decision-intelligence", response_class=HTMLResponse)
-async def get_decision_intelligence(request: Request):
+async def get_decision_intelligence(
+    request: Request,
+    _principal: Annotated[Principal, Depends(get_current_principal)],
+):
     return templates.TemplateResponse(request, "decision.html")
 
 
 @app.get("/farmer-dashboard", response_class=HTMLResponse)
-async def get_farmer_dashboard(request: Request):
+async def get_farmer_dashboard(
+    request: Request,
+    _principal: Annotated[Principal, Depends(get_current_principal)],
+):
     return templates.TemplateResponse(request, "farmer_dashboard.html")
 
 
 @app.get("/marketplace", response_class=HTMLResponse)
-async def get_marketplace(request: Request):
+async def get_marketplace(request: Request, _principal: Annotated[Principal, Depends(get_current_principal)]):
     return templates.TemplateResponse(request, "marketplace.html")
 
 
 @app.get("/community-dashboard", response_class=HTMLResponse)
-async def get_community_dashboard(request: Request):
+async def get_community_dashboard(
+    request: Request,
+    _principal: Annotated[Principal, Depends(get_current_principal)],
+):
     return templates.TemplateResponse(request, "community_dashboard.html")
 
 
 @app.get("/disease-prediction", response_class=HTMLResponse)
-async def get_disease_prediction(request: Request):
+async def get_disease_prediction(
+    request: Request,
+    _principal: Annotated[Principal, Depends(get_current_principal)],
+):
     return templates.TemplateResponse(request, "disease_prediction.html")
 
 
 @app.get("/api/data", response_class=JSONResponse)
-async def get_sensor_data():
+async def get_sensor_data(_principal: Annotated[Principal, Depends(get_current_principal)]):
     feeds = fetch_sensor_feeds()
     return {
         "feeds": feeds,
@@ -332,7 +454,7 @@ async def get_sensor_data():
 
 
 @app.get("/api/iot/anomalies", response_class=JSONResponse)
-async def get_iot_anomalies():
+async def get_iot_anomalies(_principal: Annotated[Principal, Depends(get_current_principal)]):
     feeds = safe_sensor_feeds()
     report = detect_iot_anomalies(feeds)
     report["source"] = "ThingSpeak" if feeds else "No live sensor data"
@@ -343,6 +465,7 @@ async def get_iot_anomalies():
 async def predict_disease(
     leafImage: Annotated[UploadFile, File()],
     cropType: Annotated[str, Form(min_length=1, max_length=80)],
+    _principal: Annotated[Principal, Depends(get_current_principal)],
 ):
     try:
         await leafImage.read()
@@ -355,7 +478,10 @@ async def predict_disease(
 
 
 @app.post("/api/crop-recommendation")
-async def crop_recommendation(input_data: Annotated[CropRecommendationInput, Form()]):
+async def crop_recommendation(
+    input_data: Annotated[CropRecommendationInput, Form()],
+    _principal: Annotated[Principal, Depends(get_current_principal)],
+):
     try:
         return model_service.predict_crop(**input_data.model_dump())
     except ValueError as exc:
@@ -367,7 +493,10 @@ async def crop_recommendation(input_data: Annotated[CropRecommendationInput, For
 
 
 @app.post("/api/fertilizer-recommendation")
-async def fertilizer_recommendation(input_data: FertilizerInput):
+async def fertilizer_recommendation(
+    input_data: FertilizerInput,
+    _principal: Annotated[Principal, Depends(get_current_principal)],
+):
     try:
         return model_service.predict_fertilizer(input_data.model_dump())
     except ValueError as exc:
@@ -379,7 +508,10 @@ async def fertilizer_recommendation(input_data: FertilizerInput):
 
 
 @app.post("/api/crop-price-prediction")
-async def crop_price_prediction(input_data: Annotated[PricePredictionInput, Form()]):
+async def crop_price_prediction(
+    input_data: Annotated[PricePredictionInput, Form()],
+    _principal: Annotated[Principal, Depends(get_current_principal)],
+):
     try:
         return model_service.predict_price(**input_data.model_dump())
     except ValueError as exc:
@@ -391,18 +523,44 @@ async def crop_price_prediction(input_data: Annotated[PricePredictionInput, Form
 
 
 @app.get("/api/decision-card", response_class=JSONResponse)
-async def get_decision_card():
-    return create_decision_card()
+async def get_decision_card(
+    request: Request,
+    session: Annotated[Session, Depends(get_db)],
+    principal: Annotated[Principal, Depends(get_current_principal)],
+):
+    return latest_or_create_decision(
+        session=session,
+        principal=principal,
+        request_id=getattr(request.state, "request_id", None),
+    )
 
 
 @app.post("/api/decision-card", response_class=JSONResponse)
-async def post_decision_card(payload: DecisionCardInput):
-    return create_decision_card(payload)
+async def post_decision_card(
+    payload: DecisionCardInput,
+    request: Request,
+    session: Annotated[Session, Depends(get_db)],
+    principal: Annotated[Principal, Depends(get_current_principal)],
+):
+    return persist_decision_card(
+        payload,
+        session=session,
+        principal=principal,
+        request_id=getattr(request.state, "request_id", None),
+    )
 
 
 @app.get("/api/automation-log", response_class=JSONResponse)
-async def get_automation_log():
-    card = LAST_DECISION_CARD or create_decision_card()
+async def get_automation_log(
+    request: Request,
+    session: Annotated[Session, Depends(get_db)],
+    principal: Annotated[Principal, Depends(get_current_principal)],
+):
+    card = latest_or_create_decision(
+        session=session,
+        principal=principal,
+        request_id=getattr(request.state, "request_id", None),
+    )
     return {
         "status": "active",
         "source": "Decision card workflow automation",
@@ -411,7 +569,7 @@ async def get_automation_log():
 
 
 @app.get("/api/marketplace/listings", response_class=JSONResponse)
-async def get_marketplace_listings():
+async def get_marketplace_listings(_principal: Annotated[Principal, Depends(get_current_principal)]):
     return {
         "status": "Demo data",
         "limitations": "Marketplace listings are sample data until real buyer/farmer records are connected.",
@@ -420,13 +578,22 @@ async def get_marketplace_listings():
 
 
 @app.get("/api/community/summary", response_class=JSONResponse)
-async def get_community_summary():
+async def get_community_summary(_principal: Annotated[Principal, Depends(get_current_principal)]):
     return sample_community_summary()
 
 
 @app.post("/api/assistant", response_class=JSONResponse)
-async def assistant(payload: AssistantInput):
-    card = LAST_DECISION_CARD or create_decision_card()
+async def assistant(
+    payload: AssistantInput,
+    request: Request,
+    session: Annotated[Session, Depends(get_db)],
+    principal: Annotated[Principal, Depends(get_current_principal)],
+):
+    card = latest_or_create_decision(
+        session=session,
+        principal=principal,
+        request_id=getattr(request.state, "request_id", None),
+    )
     anomaly_report = detect_iot_anomalies(safe_sensor_feeds())
     return answer_farmer_question(payload.question, card, anomaly_report)
 

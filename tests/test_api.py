@@ -9,7 +9,12 @@ from app import app, model_service
 class ApiContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.client = TestClient(app)
+        cls.client_context = TestClient(app)
+        cls.client = cls.client_context.__enter__()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.client_context.__exit__(None, None, None)
 
     def test_health_endpoint_is_available(self):
         response = self.client.get("/healthz")

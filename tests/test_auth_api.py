@@ -1,5 +1,6 @@
 import unittest
 from datetime import UTC, datetime
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
@@ -24,9 +25,14 @@ class AuthenticationApiTests(unittest.TestCase):
         app.dependency_overrides[get_settings] = lambda: settings
         claims = {"uid": "firebase-a", "auth_time": int(datetime.now(UTC).timestamp())}
 
-        with TestClient(app) as client, patch(
-            "app.create_firebase_session",
-            return_value=("signed-session-cookie", claims),
+        user = SimpleNamespace(id="user-a")
+        membership = SimpleNamespace(tenant_id="tenant-a")
+        with (
+            TestClient(app) as client,
+            patch("app.create_firebase_session", return_value=("signed-session-cookie", claims)),
+            patch("app.upsert_user_identity", return_value=user),
+            patch("app.list_active_memberships", return_value=[membership]),
+            patch("app.create_audit_event"),
         ):
             csrf_response = client.get("/api/auth/csrf")
             csrf_token = csrf_response.json()["csrf_token"]
@@ -41,6 +47,24 @@ class AuthenticationApiTests(unittest.TestCase):
         self.assertIn(f"{settings.session_cookie_name}=", set_cookie)
         self.assertIn("HttpOnly", set_cookie)
         self.assertIn("SameSite=lax", set_cookie)
+
+    def test_session_endpoint_denies_verified_identity_without_membership(self) -> None:
+        settings = AppSettings(app_env="test", auth_mode="firebase", firebase_project_id="test-project")
+        app.dependency_overrides[get_settings] = lambda: settings
+        claims = {"uid": "firebase-a", "auth_time": int(datetime.now(UTC).timestamp())}
+        with (
+            TestClient(app) as client,
+            patch("app.create_firebase_session", return_value=("unused-cookie", claims)),
+            patch("app.upsert_user_identity", return_value=SimpleNamespace(id="user-a")),
+            patch("app.list_active_memberships", return_value=[]),
+        ):
+            csrf_response = client.get("/api/auth/csrf")
+            response = client.post(
+                "/api/auth/session",
+                headers={"X-CSRF-Token": csrf_response.json()["csrf_token"]},
+                json={"id_token": "valid-id-token"},
+            )
+        self.assertEqual(403, response.status_code)
 
     def test_session_endpoint_rejects_missing_csrf_token(self) -> None:
         settings = AppSettings(app_env="test", auth_mode="firebase", firebase_project_id="test-project")
