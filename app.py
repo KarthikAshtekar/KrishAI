@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
 import requests
 from dotenv import load_dotenv
@@ -11,7 +11,6 @@ from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
 
 from decision_engine import (
     answer_farmer_question,
@@ -21,6 +20,13 @@ from decision_engine import (
     sample_marketplace_listings,
 )
 from ml_services import KrishiModelService, VALID_CROP_TYPES, VALID_SOIL_TYPES
+from schemas import (
+    AssistantInput,
+    CropRecommendationInput,
+    DecisionCardInput,
+    FertilizerInput,
+    PricePredictionInput,
+)
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -43,44 +49,6 @@ THINGSPEAK_READ_API_KEY = os.getenv("THINGSPEAK_READ_API_KEY", "")
 THINGSPEAK_RESULTS = int(os.getenv("THINGSPEAK_RESULTS", "10"))
 
 LAST_DECISION_CARD: dict[str, Any] | None = None
-
-
-class FertilizerInput(BaseModel):
-    temperature: float
-    humidity: float
-    nitrogen: float
-    phosphorous: float
-    potassium: float
-    soil_type: str
-    crop_type: str
-    moisture: float | None = None
-
-
-class CropRecommendationInput(BaseModel):
-    nitrogen: float
-    phosphorus: float
-    potassium: float
-    temperature: float
-    humidity: float
-    ph: float
-    rainfall: float
-
-
-class PricePredictionInput(BaseModel):
-    crop: str
-    month: int
-    year: int
-
-
-class DecisionCardInput(BaseModel):
-    crop_inputs: CropRecommendationInput | None = None
-    fertilizer_inputs: FertilizerInput | None = None
-    price_inputs: PricePredictionInput | None = None
-    farmer_profile: dict[str, Any] | None = None
-
-
-class AssistantInput(BaseModel):
-    question: str
 
 
 def _binary_status(value: Any) -> str | None:
@@ -313,17 +281,9 @@ async def predict_disease(leafImage: UploadFile = File(...), cropType: str = For
 
 
 @app.post("/api/crop-recommendation")
-async def crop_recommendation(
-    nitrogen: float = Form(...),
-    phosphorus: float = Form(...),
-    potassium: float = Form(...),
-    temperature: float = Form(...),
-    humidity: float = Form(...),
-    ph: float = Form(...),
-    rainfall: float = Form(...),
-):
+async def crop_recommendation(input_data: Annotated[CropRecommendationInput, Form()]):
     try:
-        return model_service.predict_crop(nitrogen, phosphorus, potassium, temperature, humidity, ph, rainfall)
+        return model_service.predict_crop(**input_data.model_dump())
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
@@ -339,9 +299,9 @@ async def fertilizer_recommendation(input_data: FertilizerInput):
 
 
 @app.post("/api/crop-price-prediction")
-async def crop_price_prediction(crop: str = Form(...), month: int = Form(...), year: int = Form(...)):
+async def crop_price_prediction(input_data: Annotated[PricePredictionInput, Form()]):
     try:
-        return model_service.predict_price(crop, month, year)
+        return model_service.predict_price(**input_data.model_dump())
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
