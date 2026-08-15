@@ -219,9 +219,13 @@ class KrishiModelService:
 
         soil_type = _match_known_value(str(input_data["soil_type"]), VALID_SOIL_TYPES, "soil type")
         crop_type = _match_known_value(str(input_data["crop_type"]), VALID_CROP_TYPES, "crop type")
+        moisture = input_data.get("moisture")
+        if moisture is None:
+            moisture = 45
         normalized = {
             "temperature": float(input_data["temperature"]),
             "humidity": float(input_data["humidity"]),
+            "moisture": float(moisture),
             "nitrogen": float(input_data["nitrogen"]),
             "phosphorous": float(input_data["phosphorous"]),
             "potassium": float(input_data["potassium"]),
@@ -234,7 +238,7 @@ class KrishiModelService:
                 {
                     "Temperature": normalized["temperature"],
                     "Humidity": normalized["humidity"],
-                    "Moisture": float(input_data.get("moisture", 45)),
+                    "Moisture": normalized["moisture"],
                     "Soil Type": soil_type,
                     "Crop Type": crop_type,
                     "Nitrogen": normalized["nitrogen"],
