@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -19,7 +19,7 @@ from decision_engine import (
     sample_community_summary,
     sample_marketplace_listings,
 )
-from ml_services import KrishiModelService, VALID_CROP_TYPES, VALID_SOIL_TYPES
+from ml_services import VALID_CROP_TYPES, VALID_SOIL_TYPES, KrishiModelService
 from schemas import (
     AssistantInput,
     CropRecommendationInput,
@@ -27,7 +27,6 @@ from schemas import (
     FertilizerInput,
     PricePredictionInput,
 )
-
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -117,14 +116,15 @@ def fetch_sensor_feeds(results: int = THINGSPEAK_RESULTS) -> list[dict[str, Any]
 def safe_sensor_feeds() -> list[dict[str, Any]]:
     try:
         return fetch_sensor_feeds()
-    except Exception as exc:
+    except HTTPException as exc:
         print(f"Sensor fetch failed, continuing with unavailable sensor state: {exc}")
         return []
 
 
 def default_decision_payload() -> DecisionCardInput:
-    month = datetime.now().month
-    year = max(datetime.now().year, 2023)
+    now = datetime.now(timezone.utc)
+    month = now.month
+    year = max(now.year, 2023)
     return DecisionCardInput(
         crop_inputs=CropRecommendationInput(
             nitrogen=70,
@@ -165,20 +165,20 @@ def create_decision_card(payload: DecisionCardInput | None = None) -> dict[str, 
     if payload.crop_inputs:
         try:
             crop_result = model_service.predict_crop(**payload.crop_inputs.model_dump())
-        except Exception as exc:
-            errors.append(f"Crop recommendation unavailable: {exc}")
+        except (RuntimeError, TypeError, ValueError):
+            errors.append("Crop recommendation unavailable")
 
     if payload.fertilizer_inputs:
         try:
             fertilizer_result = model_service.predict_fertilizer(payload.fertilizer_inputs.model_dump())
-        except Exception as exc:
-            errors.append(f"Fertilizer recommendation unavailable: {exc}")
+        except (RuntimeError, TypeError, ValueError):
+            errors.append("Fertilizer recommendation unavailable")
 
     if payload.price_inputs:
         try:
             price_result = model_service.predict_price(**payload.price_inputs.model_dump())
-        except Exception as exc:
-            errors.append(f"Price outlook unavailable: {exc}")
+        except (RuntimeError, TypeError, ValueError):
+            errors.append("Price outlook unavailable")
 
     decision_card = build_decision_card(
         crop_result=crop_result,
@@ -269,7 +269,10 @@ async def get_iot_anomalies():
 
 
 @app.post("/api/disease-prediction")
-async def predict_disease(leafImage: UploadFile = File(...), cropType: str = Form(...)):
+async def predict_disease(
+    leafImage: Annotated[UploadFile, File()],
+    cropType: Annotated[str, Form(min_length=1, max_length=80)],
+):
     try:
         await leafImage.read()
         status = model_service.disease_status()
@@ -277,15 +280,19 @@ async def predict_disease(leafImage: UploadFile = File(...), cropType: str = For
         status["uploaded_filename"] = leafImage.filename
         return status
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Error processing image metadata: {exc}") from exc
+        raise HTTPException(status_code=500, detail="Unable to process image metadata") from exc
 
 
 @app.post("/api/crop-recommendation")
 async def crop_recommendation(input_data: Annotated[CropRecommendationInput, Form()]):
     try:
         return model_service.predict_crop(**input_data.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail="Crop recommendation is temporarily unavailable") from exc
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail="Unable to generate crop recommendation") from exc
 
 
 @app.post("/api/fertilizer-recommendation")
@@ -294,8 +301,10 @@ async def fertilizer_recommendation(input_data: FertilizerInput):
         return model_service.predict_fertilizer(input_data.model_dump())
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail="Fertilizer recommendation is temporarily unavailable") from exc
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail="Unable to generate fertilizer recommendation") from exc
 
 
 @app.post("/api/crop-price-prediction")
@@ -304,8 +313,10 @@ async def crop_price_prediction(input_data: Annotated[PricePredictionInput, Form
         return model_service.predict_price(**input_data.model_dump())
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail="Crop price outlook is temporarily unavailable") from exc
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail="Unable to generate crop price outlook") from exc
 
 
 @app.get("/api/decision-card", response_class=JSONResponse)
