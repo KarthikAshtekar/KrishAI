@@ -75,6 +75,16 @@ class ApiContractTests(unittest.TestCase):
         self.assertNotIn(internal_message, response.text)
         self.assertEqual(response.json()["detail"], "Crop recommendation is temporarily unavailable")
 
+    def test_disease_upload_rejects_non_image_content(self):
+        response = self.client.post(
+            "/api/disease-prediction",
+            data={"cropType": "Maize"},
+            files={"leafImage": ("notes.txt", b"not an image", "text/plain")},
+        )
+
+        self.assertEqual(response.status_code, 415)
+        self.assertEqual(response.json()["detail"], "Only JPEG, PNG, and WebP images are accepted")
+
 
 if __name__ == "__main__":
     unittest.main()

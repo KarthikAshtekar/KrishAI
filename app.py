@@ -9,14 +9,17 @@ from typing import Annotated, Any
 import requests
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from auth import Principal, create_firebase_session, get_current_principal, new_csrf_token, validate_csrf
 from config import AppSettings, get_settings
-from database import Base, engine, get_db
+from database import Base, database_is_ready, engine, get_db
 from db_models import DecisionCardRecord
 from decision_engine import (
     answer_farmer_question,
@@ -26,6 +29,7 @@ from decision_engine import (
     sample_marketplace_listings,
 )
 from ml_services import VALID_CROP_TYPES, VALID_SOIL_TYPES, KrishiModelService
+from observability import error_payload, request_observability_middleware
 from repositories import (
     create_audit_event,
     create_decision_record,
@@ -74,6 +78,54 @@ model_service = KrishiModelService()
 THINGSPEAK_CHANNEL_ID = os.getenv("THINGSPEAK_CHANNEL_ID", "2914283")
 THINGSPEAK_READ_API_KEY = os.getenv("THINGSPEAK_READ_API_KEY", "")
 THINGSPEAK_RESULTS = int(os.getenv("THINGSPEAK_RESULTS", "10"))
+MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+ALLOWED_IMAGE_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
+
+
+@app.middleware("http")
+async def add_request_observability(request: Request, call_next):
+    return await request_observability_middleware(
+        request,
+        call_next,
+        deployed=APPLICATION_SETTINGS.is_deployed,
+    )
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=error_payload(
+            status_code=exc.status_code,
+            detail=exc.detail,
+            request_id=getattr(request.state, "request_id", None),
+        ),
+        headers=exc.headers,
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content=error_payload(
+            status_code=422,
+            detail=jsonable_encoder(exc.errors()),
+            request_id=getattr(request.state, "request_id", None),
+        ),
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, _exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content=error_payload(
+            status_code=500,
+            detail="Internal server error",
+            request_id=getattr(request.state, "request_id", None),
+        ),
+    )
 
 def _binary_status(value: Any) -> str | None:
     if value in (None, ""):
@@ -295,6 +347,20 @@ async def healthz():
     return {"status": "ok", "service": "krishi-connect"}
 
 
+@app.get("/readyz", response_class=JSONResponse)
+async def readyz():
+    database_ready = database_is_ready()
+    model_status = model_service.readiness_status()
+    ready = database_ready and model_status["ready"]
+    return JSONResponse(
+        status_code=200 if ready else 503,
+        content={
+            "status": "ready" if ready else "not_ready",
+            "checks": {"database": database_ready, "models": model_status},
+        },
+    )
+
+
 @app.get("/login", response_class=HTMLResponse)
 async def get_login(request: Request, settings: Annotated[AppSettings, Depends(get_settings)]):
     return templates.TemplateResponse(
@@ -468,11 +534,17 @@ async def predict_disease(
     _principal: Annotated[Principal, Depends(get_current_principal)],
 ):
     try:
-        await leafImage.read()
+        if leafImage.content_type not in ALLOWED_IMAGE_CONTENT_TYPES:
+            raise HTTPException(status_code=415, detail="Only JPEG, PNG, and WebP images are accepted")
+        image_bytes = await leafImage.read(MAX_UPLOAD_BYTES + 1)
+        if len(image_bytes) > MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=413, detail="Image upload exceeds the 5 MB limit")
         status = model_service.disease_status()
         status["crop_type"] = cropType
         status["uploaded_filename"] = leafImage.filename
         return status
+    except HTTPException:
+        raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail="Unable to process image metadata") from exc
 

@@ -131,11 +131,27 @@ class KrishiModelService:
     def __init__(self) -> None:
         self.crop_model = load_model(MODELS_DIR / "Crop_recommendation_model.pkl")
         self.fertilizer_model = load_model(MODELS_DIR / "Fertilizer_recommendation.pkl")
-        self.price_model = load_model(MODELS_DIR / "Crop_price_prediction_model.pkl")
         self.soil_type_encoder = load_model(MODELS_DIR / "soil_type_encoder.joblib")
         self.crop_type_encoder = load_model(MODELS_DIR / "crop_type_encoder.joblib")
         self.fertilizer_encoder = load_model(MODELS_DIR / "fertilizer_encoder.joblib")
         self.crop_price_data = self._load_crop_price_data()
+
+    def readiness_status(self) -> dict[str, Any]:
+        components = {
+            "crop_model_loaded": self.crop_model is not None,
+            "fertilizer_model_loaded": self.fertilizer_model is not None,
+            "soil_encoder_loaded": self.soil_type_encoder is not None,
+            "crop_encoder_loaded": self.crop_type_encoder is not None,
+            "fertilizer_encoder_loaded": self.fertilizer_encoder is not None,
+            "price_reference_loaded": not self.crop_price_data.empty,
+        }
+        return {
+            "ready": all(components.values()),
+            "components": components,
+            "artifact_runtime": "scikit-learn 1.6.1",
+            "validation_status": "Loaded successfully; predictive quality was not revalidated without held-out data.",
+            "price_path": "Transparent lookup/rule fallback; unused legacy XGBoost pickle is not loaded.",
+        }
 
     def _load_crop_price_data(self) -> pd.DataFrame:
         try:
