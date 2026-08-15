@@ -1,0 +1,731 @@
+{
+  "surface": "report",
+  "manifest": {
+    "version": 1,
+    "surface": "report",
+    "title": "Krishi Connect / Krishi AI — Complete Project Explainer",
+    "description": "A source-backed business and technical walkthrough of Krishi Connect, its model/runtime pipelines, tenant-aware production foundation, detailed Google Cloud hosting architecture, evidence limits, and future scope.",
+    "generatedAt": "2026-08-15T08:10:00.767Z",
+    "charts": [
+      {
+        "id": "dataset_duplicate_share",
+        "title": "Exact duplicate share by project dataset",
+        "subtitle": "Exact duplicate rows divided by total rows; all repository CSV rows audited on 15 August 2026",
+        "type": "bar",
+        "dataset": "dataset_quality",
+        "sourceId": "dataset_audit",
+        "question": "Which project dataset is most exposed to duplicate-driven validation inflation?",
+        "rationale": "A categorical bar makes the fertilizer dataset's duplicate share directly comparable with the other two repository datasets.",
+        "encodings": {
+          "x": {
+            "field": "dataset",
+            "type": "nominal",
+            "label": "Dataset"
+          },
+          "y": {
+            "field": "duplicate_share",
+            "type": "quantitative",
+            "format": "percent",
+            "label": "Exact duplicate share"
+          },
+          "tooltip": [
+            {
+              "field": "total_rows",
+              "type": "quantitative",
+              "label": "Total rows"
+            },
+            {
+              "field": "unique_rows",
+              "type": "quantitative",
+              "label": "Unique rows"
+            },
+            {
+              "field": "duplicate_rows",
+              "type": "quantitative",
+              "label": "Duplicate rows"
+            },
+            {
+              "field": "target_classes",
+              "type": "quantitative",
+              "label": "Target classes"
+            }
+          ]
+        },
+        "valueFormat": "percent",
+        "layout": "full",
+        "maxRows": 3,
+        "emptyState": "Dataset-quality audit rows are unavailable."
+      }
+    ],
+    "blocks": [
+      {
+        "id": "title",
+        "type": "markdown",
+        "layout": "full",
+        "body": "# Krishi Connect / Krishi AI — Complete Project Explainer"
+      },
+      {
+        "id": "technical_summary",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## What the project is — and what it is not\n\n**In business terms:** Krishi Connect is an agricultural decision-support product that brings farmer inputs, optional sensor evidence, model recommendations, transparent alerts, market context, and follow-up actions into one accountable Decision Card. The repository is now implementation-complete for a cloud handoff: identity, durable history, tenant isolation, auditability, monitoring hooks, and delivery automation are present.\n\n**In technical terms:** it is a FastAPI/Jinja application with Firebase session authentication, SQLAlchemy 2 persistence, Alembic migrations, tenant-scoped repositories, scikit-learn model wrappers, a deterministic decision engine, structured JSON telemetry, GitHub Actions checks, and a Cloud Build pipeline for Cloud SQL migrations and Cloud Run deployment. Local development uses built-in SQLite, so PostgreSQL does not need to be installed on the PC.\n\n**What is not complete externally:** no Google Cloud resource has been provisioned from this checkout, no Firebase project or first administrator is connected, and no authorized live farmer feed is available. Crop/fertilizer artifacts load under their matching runtime, but model quality has not been revalidated on a representative locked holdout. Price remains a transparent rule fallback, disease inference remains disabled, and marketplace/community records remain samples.\n\n**Maturity verdict:** the software foundation is suitable for a controlled cloud pilot after configuration and verification. It is not yet evidence for production agronomic accuracy, farmer impact, a live marketplace, or a live multi-farm operation."
+      },
+      {
+        "id": "evidence_boundary",
+        "type": "markdown",
+        "layout": "full",
+        "sourceId": "readme",
+        "body": "## The honesty map separates implemented code from live operational evidence\n\n| Evidence class | Current capability | What a business reader should conclude |\n|---|---|---|\n| Implemented and locally tested | Firebase session flow, CSRF, fail-closed production configuration, PostgreSQL-compatible schema, migrations, tenant filtering, persistent decisions/audits, readiness, structured logs, CI/CD definitions | The production foundation exists in code and its local/test contracts pass. |\n| Configuration-dependent | Cloud Run, Cloud SQL, Secret Manager, Artifact Registry, Cloud Build deployment, alert policies | Parameterized automation is ready, but these services are not live until the owner supplies a GCP project, billing approval, Firebase configuration, and notification channel. |\n| Model-based | Crop and fertilizer recommendations | Saved classifiers load and infer under scikit-learn 1.6.1; field performance and calibration remain unverified. |\n| Live if configured | ThingSpeak sensor reads | Telemetry can be real only after the farmer-owned channel, field mapping, consent, units, and freshness are verified. |\n| Rule-based | Anomalies, risk, workflow actions, assistant intents | Outputs are explainable thresholds/keywords—not learned risk probabilities or a generative AI agent. |\n| Demo fallback/data | Price outlook, marketplace listings, community aggregation | Useful for workflow demonstration, not commercial or impact decisions. |\n| Disabled | Disease inference | A model file exists, but labels and validated preprocessing are absent; the runtime image excludes it. |\n\nThe application is called **Krishi Connect** in code and **Krishi AI** in the original presentation. This explainer treats them as one project lineage and uses current code/tests as authority."
+      },
+      {
+        "id": "stakeholder_value",
+        "type": "markdown",
+        "layout": "full",
+        "sourceId": "decision_engine",
+        "body": "## The business value is a shared decision loop across farmer, buyer, and FPO roles\n\n| Stakeholder | Decision supported today | Present evidence | Production requirement still missing |\n|---|---|---|---|\n| Farmer | What crop to consider, which fertilizer class to review, whether irrigation/heat needs attention, and whether to prepare buyer outreach | Crop model, fertilizer model artifact, sensor thresholds, price fallback, Decision Card | Local agronomy validation, working fertilizer request path, field identity, history, consent, and calibrated risk |\n| Buyer | Which sample crop lots appear to fit a buyer segment | Three labelled demo listings with match scores | Real listings, quality grades, verified quantities, logistics, contracts, and identity |\n| FPO/cooperative | Which sample farms need moisture or heat support and which crops may be aggregated | Five hard-coded demo farm records | Multi-farm database, role access, device/farm mapping, live supply records, and accountable workflows |\n| Extension officer | Why a recommendation or alert appeared | Explanation & Trust cards state basis, factors, source, confidence label, and limitations | Model-level explanations, case notes, override reason, agronomist approval, and outcome feedback |\n\nThe project should therefore be positioned as **decision support**. It proposes and explains actions; it does not prove that those actions increase yield, reduce water use, or improve income."
+      },
+      {
+        "id": "runtime_pipeline",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## Runtime pipeline: identity and farm inputs become a durable, explainable action card\n\n```text\nBrowser/API -> Firebase ID token -> recent-token session exchange -> HTTP-only cookie\n     |                CSRF check + token verification + membership lookup\n     v\nPydantic boundary validation -> tenant-scoped request context + request ID\n     |\n     +-> farmer N/P/K, pH, weather, crop/soil inputs\n     +-> optional ThingSpeak readings -> cleaning, type normalization, freshness rules\n     |\n     v\nCrop Random Forest + Fertilizer Random Forest + transparent price fallback\n     |\n     v\nDecision engine -> anomaly severity -> trust cards -> recommended actions -> workflow log\n     |\n     v\nSQL transaction -> decision_cards + audit_events, both keyed by verified tenant\n     |\n     +-> HTML/JSON response with decision_id\n     +-> structured request log + Cloud Run/Cloud SQL platform metrics\n```\n\n**Business reading:** each recommendation has an owner, tenant, evidence basis, durable identifier, and audit trail. A page refresh or Cloud Run instance replacement does not erase the latest decision.\n\n**Technical reading:** authentication never trusts a tenant header by itself; the header only selects an active membership. Repository reads require tenant context. Cloud Run instances remain stateless while Cloud SQL owns durable business records."
+      },
+      {
+        "id": "offline_training_pipeline",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## Offline training and online serving are separate pipelines\n\n```text\nCSV -> notebook cleaning/features -> train/test evaluation -> serialized artifacts\n    -> pinned serving runtime -> feature-contract wrapper -> readiness check -> predict()\n```\n\nThe notebooks are the model-development record; FastAPI is the online inference path. The serving image includes only required artifacts and price reference data. scikit-learn is pinned to 1.6.1 to align with the saved crop/fertilizer artifacts. The unused legacy XGBoost price pickle is excluded and not loaded because its fitted encoder/scaler pipeline is missing. This removes a misleading compatibility path, but does not substitute for prediction-parity and external-quality validation."
+      },
+      {
+        "id": "crop_data",
+        "type": "markdown",
+        "layout": "full",
+        "sourceId": "crop_csv",
+        "body": "## Crop recommendation is the cleanest end-to-end model path\n\nThe crop dataset contains **2,200 rows and 8 columns**: seven numeric predictors plus the crop label. The audit found no missing values, no duplicate rows, and 22 crop classes with exactly 100 examples each. That balance makes ordinary accuracy readable, although it does not prove the dataset represents real farm prevalence.\n\n| Input feature | Plain-English meaning |\n|---|---|\n| Nitrogen, Phosphorus, Potassium | Soil nutrient measurements |\n| Temperature, Humidity | Local growing conditions |\n| pH_Value | Soil acidity/alkalinity |\n| Rainfall | Water received over the represented period |\n| Crop | Training label / recommended class |"
+      },
+      {
+        "id": "crop_model",
+        "type": "markdown",
+        "layout": "full",
+        "body": "### Model method and evidence\n\nThe notebook uses a random 80/20 split (`random_state=42`) and a `RandomForestClassifier` with 100 trees. The saved notebook reports **99.318% accuracy on 440 held-out rows**. Per-class precision/recall is mostly 1.00; the visible exceptions include Jute and Lentil precision of 0.92, MothBeans recall of 0.96, and Rice recall of 0.89. The saved artifact exposes the exact seven feature names, and a live API smoke using the notebook example returned **Rice**.\n\n**Why it is useful:** a random forest can represent nonlinear interactions among nutrients and climate without requiring manual equations.\n\n**Why the score is not yet field proof:** there is no cross-validation, probability calibration, geographic/time split, farm-level grouping, out-of-distribution test, data provenance statement, or prospective agronomist evaluation. Treat 99.3% as evidence for this saved split—not expected real-world accuracy."
+      },
+      {
+        "id": "fertilizer_data",
+        "type": "markdown",
+        "layout": "full",
+        "sourceId": "fertilizer_csv",
+        "body": "## Fertilizer modeling works at artifact level, but its evaluation is highly optimistic\n\nThe fertilizer dataset has **552 rows and 9 columns**, no missing cells, five soil categories, 17 crop categories, and 14 fertilizer labels. However, **414 rows are exact duplicates (75% of the dataset)**. The target is also imbalanced: Urea has 108 rows, while Potassium chloride has only 4. A random row split can therefore place identical records in both training and test sets.\n\n| Inputs | Training representation |\n|---|---|\n| Temperature, humidity, moisture, N, P, K | Numeric |\n| Soil type | Label-encoded with a saved encoder |\n| Crop type | Label-encoded with a saved encoder |\n| Fertilizer name | Label-encoded target, inverse-transformed after prediction |"
+      },
+      {
+        "id": "fertilizer_model",
+        "type": "markdown",
+        "layout": "full",
+        "body": "### Notebook score, saved model, and repaired runtime contract\n\nThe notebook creates a 441-row training set and 111-row test set, then fits a random forest. A 3-fold grid search evaluates 81 parameter combinations (243 fits); the saved best settings include 100 trees and maximum depth 10. The notebook reports 1.00 test accuracy and a 0.9932 best cross-validation score. Because 75% of dataset rows are exact duplicates, these remain leakage-sensitive development diagnostics.\n\nThe model and three encoders load under the pinned runtime. The earlier omitted-moisture failure is repaired: missing or explicit-null moisture now uses the documented value of **45**, and regression/API tests cover the path. This makes the endpoint operational, but agronomic validity still depends on deduplicated evaluation, representative geography/season coverage, and field review."
+      },
+      {
+        "id": "dataset_quality_takeaway",
+        "type": "markdown",
+        "layout": "full",
+        "sourceId": "dataset_audit",
+        "body": "## One dataset-quality difference explains the largest model-evidence risk\n\nThe fertilizer file's **75% exact-duplicate share** is the outlier; the crop recommendation and crop price files contain no exact duplicate rows. Read the bar as a validation-risk signal, not a quality score: duplicates do not automatically make every prediction wrong, but random splitting makes identical examples likely to appear on both sides and inflates the apparent ability to generalize. The audit contains only three project CSVs, so all three are shown rather than inventing extra categories."
+      },
+      {
+        "id": "dataset_quality_chart",
+        "type": "chart",
+        "layout": "full",
+        "chartId": "dataset_duplicate_share"
+      },
+      {
+        "id": "price_pipeline",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## Price prediction is intentionally downgraded to a transparent demo\n\nThe price notebook starts with **49 records, 13 states, 10 crops, and 9 source columns**. It creates cost-per-yield, log-price, and `StateAvgPrice`, one-hot encodes state/crop, standardizes features, and fits an XGBoost regressor on 31 inputs. The notebook reports **R² = 0.9846 on log price** for an approximately 10-row random test set.\n\nTwo issues prevent that score from supporting the running feature:\n\n1. `StateAvgPrice` is computed from the full dataset's target price before the split, which leaks outcome information into test features.\n2. Only the model is saved; the fitted one-hot encoder, scaler, feature-building logic, and full pipeline are not. Supplying raw crop/month/year values to the 31-feature model would be invalid.\n\nThe API therefore does something safer: it computes the selected crop's historical mean from `Crop_Price.csv`, applies a hard-coded seasonal factor and 4% annual uplift from 2023, then labels the ratio as Favourable, Stable, or Weak. It returns `model_used: false` and low confidence. This is understandable demo logic, not a forecast."
+      },
+      {
+        "id": "disease_and_iot_claims",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## Presentation outcomes are vision statements unless the repository reproduces them\n\nThe slide deck claims 92% disease accuracy across 15+ diseases, LSTM/ARIMA weather forecasting, 87% price reliability, and 35% water reduction from automated irrigation. This checkout does not contain reproducible code, data, evaluation, or operational telemetry for those outcomes.\n\n- The 51.6 MB `.keras` file is bundled, but TensorFlow is not a runtime dependency and class labels/preprocessing metadata are missing; the app correctly disables inference.\n- There is no YOLOv8, LSTM, ARIMA, Prophet, or seven-day weather pipeline in the source tree.\n- The app reads optional pump status but exposes no actuator command that writes to a relay, NodeMCU, or ThingSpeak. “Automation” here means creating workflow records and recommended actions.\n- No before/after experiment supports a water-savings, yield, or profitability claim.\n\nThese ideas remain reasonable future scope. They should not appear in a demo, proposal, or assessment as completed results until an executable pipeline and evaluation artifact exist."
+      },
+      {
+        "id": "iot_rules",
+        "type": "markdown",
+        "layout": "full",
+        "sourceId": "decision_engine",
+        "body": "## IoT rules turn the latest sensor values into risk and workflow priorities\n\nThingSpeak records are mapped as temperature (`field1`), humidity (`field2`), soil moisture (`field3`), light intensity or rain status (`field4`), and optional pump status (`field5`). The server requests the latest configured number of feeds with a five-second timeout, converts safe numeric values, and degrades to an unavailable state when fetching fails.\n\n| Rule | Condition | Result |\n|---|---:|---|\n| No sensor data | zero usable feeds | Critical alert; check configuration/connectivity/power |\n| Critical low moisture | moisture < 15 | Immediate irrigation/pump verification |\n| Low moisture | 15 ≤ moisture < 30 | Irrigation within 24–48 hours |\n| Severe heat | temperature ≥ 42°C | Critical heat-stress action |\n| Heat stress | 36°C ≤ temperature < 42°C | Warning; adjust monitoring/irrigation timing |\n| Disease-weather risk | humidity ≥ 80% and 20–32°C | Warning to inspect leaves and drainage/ventilation |\n| Stale feed | latest age > 180 minutes | Warning to verify device publishing |\n| Sudden change | moisture jump > 20 or temperature jump > 8 | Informational sensor/field check |\n\nAny critical alert—or at least two warnings—creates High risk; one warning creates Moderate risk; otherwise risk is Low. Each alert becomes a workflow record with trigger, condition, severity, priority, stakeholder, source, timestamp, status, and recommended action. These thresholds are auditable but are not crop-specific or calibrated to expected loss."
+      },
+      {
+        "id": "decision_trust_assistant",
+        "type": "markdown",
+        "layout": "full",
+        "sourceId": "decision_engine",
+        "body": "## The Decision Card is now a durable tenant-scoped integration record\n\nEach card combines recommendations, sensor/anomaly status, market context, trust explanations, and workflow actions. POST writes the input payload, result, actor, request ID, model-basis metadata, and tenant to `decision_cards`; a paired `audit_events` record captures the significant action. GET, automation, and assistant paths retrieve only the verified tenant's latest card.\n\nThe assistant remains intentionally bounded. It classifies common intents with keywords and answers from the latest decision/anomaly context. It does not call a generative model, invent missing farmer data, or acquire access outside the current tenant. This is safer and cheaper for a pilot, though it is not open-ended conversational intelligence."
+      },
+      {
+        "id": "interfaces",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## Interfaces: eight pages and protected APIs share one FastAPI service\n\n| Surface | Purpose | Access/evidence status |\n|---|---|---|\n| `/login` | Firebase email/password sign-in; session-cookie exchange | Public entry; demo bypass is visibly labelled and only allowed outside staging/production |\n| `/` | Crop, fertilizer, price, and disease-status forms | Authenticated business page |\n| `/decision-intelligence` | Decision Card, trust layer, workflows, assistant | Authenticated; decisions are persistent and tenant-scoped |\n| `/dashboard` | ThingSpeak charts and anomalies | Authenticated; live only when farmer data is configured |\n| `/farmer-dashboard` | Farmer operating view | Authenticated |\n| `/marketplace` | Buyer-connect demonstration | Authenticated; sample data |\n| `/community-dashboard` | FPO/community aggregation | Authenticated; sample data |\n| `/disease-prediction` | Safe disabled-state workflow | Authenticated; uploads capped at 5 MB and restricted to JPEG/PNG/WebP |\n| `/healthz` / `/readyz` | Liveness / database-and-model readiness | Public operational probes; readiness returns 503 on dependency failure |\n\nProtected responses use a consistent additive error envelope and carry request ID plus baseline CSP, clickjacking, content-type, referrer, and permissions headers."
+      },
+      {
+        "id": "verification",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## Verification performed after the production-foundation implementation\n\n**Passed locally:**\n\n- **61** discovered unit/integration tests, including validation, missing moisture, authentication/CSRF, environment fail-closed and secure-cookie checks, token/upstream-secret redaction, session membership denial, role denial, migration parity, upgrade/downgrade, tenant isolation, cross-request decision persistence, audit writes, readiness, headers, logging redaction, and idempotent first-tenant bootstrap.\n- Ruff repository lint and Python compile checks.\n- Alembic upgrade, metadata check, and downgrade against temporary SQLite databases.\n- Crop/fertilizer artifact loading under scikit-learn 1.6.1 with all readiness components true.\n- Dependency audit: no known vulnerabilities reported for the pinned runtime requirements at verification time.\n- GitHub Actions and Cloud Build YAML parse; no credential-shaped tracked values found.\n\n**Browser/report QA:** the self-contained explainer is generated and checked in desktop/mobile modes by the portable-report verifier. The login page is also exercised locally in an isolated browser after generation.\n\n**Not verified in this checkout:** Docker build, because Docker is intentionally not installed on the low-space PC; the included CI and Cloud Build pipelines perform it. Also unverified are a live GCP revision, Cloud SQL connectivity, real Firebase login, notification delivery, private ThingSpeak access, device-to-field mapping, load/concurrency, and agricultural impact."
+      },
+      {
+        "id": "hosting_mental_model",
+        "type": "markdown",
+        "layout": "full",
+        "sourceId": "cloud_source_deploy",
+        "body": "## Hosting explained plainly: every cloud component has one job\n\nA useful mental model is a managed restaurant:\n\n- **Git repository** is the recipe and audit history.\n- **Cloud Build** is the inspected kitchen that runs tests and builds a sealed image.\n- **Artifact Registry** is the versioned shelf holding that image.\n- **Cloud Run** opens or closes serving stations as traffic changes; stations keep no durable farm history.\n- **Cloud SQL for PostgreSQL** is the durable ledger for tenants, decisions, and audits.\n- **Firebase Authentication** proves who the user is; database membership decides which tenant they may use.\n- **Secret Manager** supplies the database connection without putting passwords in code or image layers.\n- **Cloud Logging/Monitoring** records requests and platform health and routes alerts after a human notification channel is configured.\n\n```text\nGit push/manual submit -> Cloud Build tests -> runtime image -> Artifact Registry\n                                      |\n                                      v\n                           migration Cloud Run Job\n                                      |\n                                      v\nBrowser -> HTTPS -> Cloud Run revision -> Cloud SQL socket\n    |              |        |              |\nFirebase login ----+        +-> ThingSpeak (optional)\n                            +-> JSON logs / managed metrics\n```\n\nNo PostgreSQL or Docker installation is required on the PC: development uses SQLite, and builds/provisioning run in Google Cloud/GitHub infrastructure."
+      },
+      {
+        "id": "hosting_repo_specific",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## What this repository's container and deployment pipeline do\n\nThe multi-stage Dockerfile has a test target and a smaller runtime target. The test stage installs development tools and executes lint/tests. The runtime stage uses Python 3.11, exact dependencies, a non-root user, only application/migration assets, required model artifacts, and the small price CSV. It excludes notebooks, the disabled 51 MB disease model, the unused XGBoost pickle, presentation/report files, local databases, logs, and virtual environments.\n\n`cloudbuild.yaml` then performs six ordered actions: container tests, runtime build, Artifact Registry push, migration-job update, blocking Alembic migration execution, and Cloud Run deployment. If tests or migrations fail, the new application revision is not deployed."
+      },
+      {
+        "id": "hosting_command",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## Cloud provisioning and deployment are intentionally two separate approvals\n\n**Provisioning:** `scripts/gcp_bootstrap.sh` runs in Google Cloud Shell and refuses to create anything until `CONFIRM_CREATE_PAID_RESOURCES=YES`. It enables APIs, creates Artifact Registry, a least-privilege runtime service account, a small PostgreSQL 16 Cloud SQL instance, database/user, Secret Manager database URL, and scoped Cloud Build permissions. Cloud SQL is the main continuously billed component.\n\n**Deployment:** the owner submits `cloudbuild.yaml` with project/region, immutable image tag, Cloud SQL connection, runtime identity, Firebase web configuration, and secret names. The application uses `APP_ENV=production` and `AUTH_MODE=firebase`; startup fails if Firebase or PostgreSQL configuration is absent.\n\n**First user:** after Firebase creates the administrator identity, a one-time Cloud Run Job runs `python -m scripts.bootstrap_tenant` with that UID. It creates or updates the tenant, user, and ADMIN membership idempotently.\n\nEvery command and rollback/backup step is in `docs/GCP_RUNBOOK.md`. No paid resource was created while producing this report."
+      },
+      {
+        "id": "cloud_runtime",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## What happens after deployment: revisions scale, the database persists, and readiness exposes failures\n\nCloud Run creates an immutable revision for each image/config combination and is configured with zero minimum instances, at most three instances, one CPU, 1 GiB memory, concurrency 40, and a 60-second request timeout. Scale-to-zero reduces idle compute cost but can add cold-start delay. Cloud SQL does not scale to zero and continues billing while the instance exists.\n\nThe public Cloud Run URL is necessary for the login page, but application routes still enforce Firebase and membership authorization. `/healthz` says the process is alive. `/readyz` tests database connectivity and critical model/reference loading; it returns HTTP 503 if either is unavailable. Durable cards/audits remain in PostgreSQL when revisions restart or scale horizontally."
+      },
+      {
+        "id": "cloud_security_ops",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## Cloud security, secrets, monitoring, backup, and rollback\n\n- **Identity:** Firebase Admin verifies ID tokens/session cookies; recent sign-in is required for cookie exchange. Production has no demo fallback.\n- **Authorization:** tenant selection is checked against active database membership; direct cross-tenant repository reads return no record.\n- **Secrets:** Cloud Run and migration jobs receive `DATABASE_URL` from Secret Manager; no service-account key or real credential is tracked.\n- **Web controls:** HTTP-only secure production sessions, SameSite cookies, double-submit CSRF, HSTS in deployed mode, CSP/security headers, bounded uploads, generic internal errors.\n- **Observability:** structured request events contain request ID, method, bounded path, status, and duration—never bodies, authorization headers, cookies, or passwords. Cloud Run supplies request/latency/CPU/memory metrics. A guarded script creates 5xx, CPU, and memory alerts once a notification channel exists.\n- **Delivery:** GitHub CI runs lint, compile, tests, migrations, dependency audit, and Docker targets. Cloud Build performs deployment-side container tests and migrations.\n- **Recovery:** the runbook covers automated/on-demand Cloud SQL backups, traffic rollback to a known revision, schema compatibility review, and explicit cost-aware teardown.\n\nCloud configuration is code-ready, not live evidence. Notification recipients, uptime check, production domain, final cookie/CSP review, and rollback drill require the deployed environment."
+      },
+      {
+        "id": "production_gaps",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## Remaining risk register — ordered by what can still invalidate trust\n\n| Priority | Risk still open | Why it matters | Required closure evidence |\n|---|---|---|---|\n| 1 | No authorized live farmer source | Demo/default inputs cannot establish operational value or data rights | Farmer/FPO agreement, device registry, mapping, units, freshness, consent, retention tests |\n| 2 | Crop/fertilizer external quality unverified | Artifact loading is not proof of field generalization | Deduplicated grouped/time/geographic holdout, calibration, agronomist review, outcome follow-up |\n| 3 | Cloud/Firebase not provisioned | Production controls exist only as code until connected | Successful Cloud Build, migration job, readyz, real sign-in, tenant denial, backup and rollback evidence |\n| 4 | Price is not model inference | Commercial recommendations could be mistaken for forecasts | Saved end-to-end pipeline, richer market features, locked temporal evaluation, uncertainty |\n| 5 | Disease inference unavailable | A wrong disease label could cause harmful treatment | Versioned labels/preprocessing, representative images, abstention and expert escalation |\n| 6 | Marketplace/community use samples | No proof of supply, buyer quality, contracts, or multi-farm aggregation | Verified actors/listings, workflow ownership, privacy and reconciliation controls |\n| 7 | Alert thresholds are generic | Crop/stage/soil differences can create false urgency | Pilot-specific thresholds, false-alert review, overrides, safe advisory/actuator separation |\n\nAuthentication, persistence, tenant isolation, baseline monitoring, and CI/CD are no longer missing code paths; they remain deployment/configuration evidence to verify in the target account."
+      },
+      {
+        "id": "roadmap",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## Future scope: move from cloud-ready code to measured agricultural outcomes\n\n### Gate 1 — Connect the owner-controlled cloud environment\n\n1. Approve region, Cloud SQL size, monthly budget, retention, and notification recipients.\n2. Configure Firebase web authentication and the first administrator UID.\n3. Run guarded bootstrap, Cloud Build, migration, tenant bootstrap, readiness, sign-in, isolation, backup, alert, and rollback checks.\n4. Attach a production hostname and complete cookie/CSP/privacy review.\n\n### Gate 2 — Connect one controlled farmer/FPO pilot\n\n1. Register farm, plot, device, ownership, consent, field mapping, units, and data-quality rules.\n2. Keep marketplace/community features labelled demo until verified operational records replace samples.\n3. Measure freshness, request latency, recommendation acceptance, override rate, false urgent alerts, and follow-up completion.\n4. Keep advice human-reviewed; do not connect automated pumps without a separate fail-safe control design.\n\n### Gate 3 — Rebuild model evidence\n\n1. Deduplicate fertilizer data and use farm/geography/time groups with an untouched external test set.\n2. Rebuild price as one fitted preprocessing-and-model pipeline with temporal evaluation and uncertainty.\n3. Add artifact hashes, feature-contract parity, version registry, drift/data-quality monitoring, calibration, and subgroup reporting.\n4. Enable disease inference only after labels, preprocessing, representative validation, abstention, and agronomist escalation are verified.\n\n### Gate 4 — Scale only after pilot evidence\n\n- Multilingual, low-bandwidth/offline-first flows and assisted onboarding.\n- Verified FPO/buyer workflows, logistics, quality grades, contracts, and privacy-preserving aggregation.\n- Prospective evaluation of water, yield, input cost, and farmer income with uncertainty and counterfactual design."
+      },
+      {
+        "id": "demo_flow",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## Recommended demonstration and release-review flow\n\n1. Open `/login` and point out the explicit local demo banner; explain that production refuses demo authentication.\n2. Submit crop and fertilizer examples, including fertilizer without moisture, and show the model basis and documented default.\n3. Create a Decision Card, refresh, and show the same durable `decision_id`; then show the workflow/audit context.\n4. Explain `/dashboard` as ThingSpeak-ready but not live-farmer evidence until ownership/mapping are verified.\n5. Ask the assistant “What data is this based on?” to show its evidence-bounded behavior.\n6. Show marketplace/community only after stating that records are samples; show disease as intentionally disabled.\n7. Open `/readyz`, then walk through Cloud Build -> migration job -> Cloud Run -> Cloud SQL -> logs/alerts/rollback.\n8. End with the honest boundary: software controls are built; cloud activation, live data, and field outcomes still require owner inputs and verification."
+      },
+      {
+        "id": "file_map",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## Repository map: where the production-ready foundation lives\n\n| Area | Files | Responsibility |\n|---|---|---|\n| Web/orchestration | `app.py`, `schemas.py` | Pages/APIs, validation, ThingSpeak boundary, decision persistence, health/readiness, auth endpoints |\n| Identity/config | `auth.py`, `config.py`, `templates/login.html` | Firebase Admin verification, session/CSRF, principal/role resolution, fail-closed settings, login UX |\n| Persistence | `database.py`, `db_models.py`, `repositories.py` | SQLAlchemy sessions, PostgreSQL-compatible schema, tenant-scoped queries and writes |\n| Migrations | `alembic.ini`, `migrations/` | Versioned schema upgrade/downgrade; production job contract |\n| Model serving | `ml_services.py` | Artifact loading/readiness, crop/fertilizer inference, price fallback, disabled disease status |\n| Decision logic | `decision_engine.py` | Sensor normalization, anomaly/risk rules, trust cards, workflows, samples, assistant intents |\n| Data/model development | `Jupyter files/`, `models/` | Training notebooks/CSVs and saved artifacts; incomplete artifacts excluded from runtime image |\n| Observability/security | `observability.py` | JSON logs, request IDs, security headers, safe error envelope |\n| Delivery | `Dockerfile`, `.dockerignore`, `.github/workflows/ci.yml`, `cloudbuild.yaml` | Multi-stage container, CI gates, migration-first Cloud Run delivery |\n| Cloud operations | `scripts/`, `docs/GCP_RUNBOOK.md`, `.env.example` | Guarded provisioning/monitoring, first tenant, configuration, backup/rollback/cost controls |\n| Verification | `tests/`, `requirements-dev.txt`, `pyproject.toml` | 61 local tests, lint rules, API/repository/auth/migration/operations contracts |\n\n`project_explainer.html` is the canonical portable explainer. `project_explainer_artifact.json` is the auditable source, and the two Node scripts refresh/package it."
+      },
+      {
+        "id": "glossary",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## Technical-to-business glossary\n\n| Technical term | Meaning here | Business interpretation |\n|---|---|---|\n| Random forest | Many decision trees vote on a class | Flexible recommendation model; still needs validation outside training data |\n| Feature | A model input such as nitrogen or rainfall | A fact the recommendation considers |\n| Label encoder | Maps category names to integer codes | A strict lookup contract that must remain identical in training and service |\n| Holdout | Rows excluded from fitting and used once for evaluation | A rehearsal of unseen cases—not automatically a field trial |\n| Leakage | Test-time information enters training/features | A score looks better than future performance is likely to be |\n| Calibration | Whether stated probabilities match observed frequencies | Whether “70% confident” actually succeeds about 70% of the time |\n| API | Machine-readable HTTP interface | How pages, mobile apps, or partners request a decision |\n| Container | Packaged Linux filesystem plus startup command | A repeatable deployable unit |\n| Revision | Immutable Cloud Run deployment version | A release that can receive traffic or be rolled back |\n| Scale to zero | No active instances while idle | Lower idle cost, with possible first-request delay |\n| Stateless | An instance is not a durable record keeper | Decisions/history must live in a database, not Python memory |\n| SHAP | Model-attribution method | A possible future “which features pushed this result?” explanation |\n| FPO | Farmer Producer Organization | Cooperative user that aggregates support, supply, and market coordination |"
+      },
+      {
+        "id": "next_questions",
+        "type": "markdown",
+        "layout": "full",
+        "body": "## Inputs needed to activate the cloud release\n\n1. What is the billed Google Cloud project ID and approved region?\n2. What Cloud SQL monthly budget/tier is approved, and who receives billing/incident alerts?\n3. What are the Firebase project ID, web API key, auth domain, and first administrator UID/email?\n4. What production hostname and privacy/retention policy should apply?\n5. Which farmer/FPO owns the first ThingSpeak channel, and what do fields 1–5 mean in units and device/plot identity?\n6. Who reviews agronomic recommendations and overrides during the pilot, and which outcomes are recorded?\n\n**Bottom line:** authentication, PostgreSQL persistence, tenant isolation, request monitoring, migrations, CI/CD, and cloud runbooks are implemented. The honest remaining boundary is external: activate them in the owner's cloud account, connect authorized farmer data, and validate agricultural outcomes before production claims."
+      }
+    ],
+    "sources": [
+      {
+        "id": "readme",
+        "label": "Project operating guide",
+        "path": "README.md"
+      },
+      {
+        "id": "app",
+        "label": "FastAPI application and route contracts",
+        "path": "app.py"
+      },
+      {
+        "id": "ml_services",
+        "label": "Model-serving and fallback logic",
+        "path": "ml_services.py"
+      },
+      {
+        "id": "decision_engine",
+        "label": "Decision rules, trust cards, workflows, and assistant",
+        "path": "decision_engine.py"
+      },
+      {
+        "id": "tests",
+        "label": "Decision-engine unit tests",
+        "path": "tests/test_decision_engine.py"
+      },
+      {
+        "id": "crop_csv",
+        "label": "Crop recommendation dataset",
+        "path": "Jupyter files/Crop_Recommendation.csv"
+      },
+      {
+        "id": "crop_notebook",
+        "label": "Executed crop recommendation notebook",
+        "path": "Jupyter files/Crop_recommendation.ipynb"
+      },
+      {
+        "id": "fertilizer_csv",
+        "label": "Fertilizer recommendation dataset",
+        "path": "Jupyter files/Fertilizer_Recommendation2.csv"
+      },
+      {
+        "id": "fertilizer_notebook",
+        "label": "Executed fertilizer recommendation notebook",
+        "path": "Jupyter files/Fertilizer_recommendation.nbconvert.ipynb"
+      },
+      {
+        "id": "price_csv",
+        "label": "Crop price dataset",
+        "path": "Jupyter files/Crop_Price.csv"
+      },
+      {
+        "id": "price_notebook",
+        "label": "Executed crop price notebook",
+        "path": "Jupyter files/Crop_price_prediction.ipynb"
+      },
+      {
+        "id": "presentation",
+        "label": "Original Krishi AI presentation",
+        "path": "KrishiAI(0.1.0).pptx"
+      },
+      {
+        "id": "dockerfile",
+        "label": "Cloud Run container definition",
+        "path": "Dockerfile"
+      },
+      {
+        "id": "dockerignore",
+        "label": "Docker build-context exclusions",
+        "path": ".dockerignore"
+      },
+      {
+        "id": "requirements",
+        "label": "Python dependency contract",
+        "path": "requirements.txt"
+      },
+      {
+        "id": "dataset_audit",
+        "label": "Repository CSV data-quality audit",
+        "query": {
+          "engine": "SQLite over reviewed audit results",
+          "language": "sql",
+          "description": "Presentation query over counts produced by a complete pandas audit of row counts, exact duplicates, missing cells, and target cardinality in the three repository CSV files.",
+          "sql": "WITH dataset_quality(dataset, total_rows, unique_rows, duplicate_rows, duplicate_share, target_classes, largest_class_share, missing_cells) AS (VALUES ('Crop recommendation', 2200, 2200, 0, 0.0, 22, 0.0454545455, 0), ('Fertilizer recommendation', 552, 138, 414, 0.75, 14, 0.1956521739, 0), ('Crop price', 49, 49, 0, 0.0, 10, 0.1020408163, 0)) SELECT dataset, total_rows, unique_rows, duplicate_rows, duplicate_share, target_classes, largest_class_share, missing_cells FROM dataset_quality ORDER BY duplicate_share DESC, total_rows DESC",
+          "executed_at": "2026-08-15T04:02:34+05:30",
+          "filters": [
+            "All rows",
+            "Exact duplicates measured across all columns",
+            "No sampling"
+          ],
+          "tables_used": [
+            "Jupyter files/Crop_Recommendation.csv",
+            "Jupyter files/Fertilizer_Recommendation2.csv",
+            "Jupyter files/Crop_Price.csv"
+          ]
+        }
+      },
+      {
+        "id": "cloud_source_deploy",
+        "label": "Google Cloud — deploy services from source",
+        "href": "https://cloud.google.com/run/docs/deploying-source-code"
+      },
+      {
+        "id": "cloud_contract",
+        "label": "Google Cloud — Cloud Run container runtime contract",
+        "href": "https://cloud.google.com/run/docs/container-contract"
+      },
+      {
+        "id": "cloud_env",
+        "label": "Google Cloud — configure Cloud Run environment variables",
+        "href": "https://cloud.google.com/run/docs/configuring/services/environment-variables"
+      },
+      {
+        "id": "cloud_secrets",
+        "label": "Google Cloud — configure secrets for Cloud Run",
+        "href": "https://cloud.google.com/run/docs/configuring/secrets"
+      },
+      {
+        "id": "cloud_scaling",
+        "label": "Google Cloud — Cloud Run autoscaling",
+        "href": "https://cloud.google.com/run/docs/about-instance-autoscaling"
+      },
+      {
+        "id": "cloud_logging",
+        "label": "Google Cloud — Cloud Run logging",
+        "href": "https://cloud.google.com/run/docs/logging"
+      },
+      {
+        "id": "cloud_pricing",
+        "label": "Google Cloud — Cloud Run pricing",
+        "href": "https://cloud.google.com/run/pricing"
+      },
+      {
+        "id": "cloud_rollouts",
+        "label": "Google Cloud — rollouts, rollbacks, and traffic migration",
+        "href": "https://cloud.google.com/run/docs/rollouts-rollbacks-traffic-migration"
+      },
+      {
+        "id": "auth",
+        "label": "Firebase authentication and authorization",
+        "path": "auth.py"
+      },
+      {
+        "id": "config",
+        "label": "Fail-closed environment configuration",
+        "path": "config.py"
+      },
+      {
+        "id": "database",
+        "label": "SQLAlchemy engine and transaction boundaries",
+        "path": "database.py"
+      },
+      {
+        "id": "db_models",
+        "label": "Tenant-aware SQLAlchemy schema",
+        "path": "db_models.py"
+      },
+      {
+        "id": "repositories",
+        "label": "Tenant-scoped persistence queries",
+        "path": "repositories.py"
+      },
+      {
+        "id": "migrations",
+        "label": "Initial Alembic migration",
+        "path": "migrations/versions/0001_cloud_schema.py"
+      },
+      {
+        "id": "observability",
+        "label": "Request telemetry and security middleware",
+        "path": "observability.py"
+      },
+      {
+        "id": "ci",
+        "label": "GitHub Actions quality gates",
+        "path": ".github/workflows/ci.yml"
+      },
+      {
+        "id": "cloudbuild",
+        "label": "Migration-first Cloud Build deployment",
+        "path": "cloudbuild.yaml"
+      },
+      {
+        "id": "runbook",
+        "label": "Google Cloud provisioning and operations runbook",
+        "path": "docs/GCP_RUNBOOK.md"
+      },
+      {
+        "id": "auth_tests",
+        "label": "Authentication and session tests",
+        "path": "tests/test_auth.py"
+      },
+      {
+        "id": "tenant_tests",
+        "label": "Cross-tenant repository tests",
+        "path": "tests/test_repositories.py"
+      },
+      {
+        "id": "persistence_tests",
+        "label": "Decision persistence API tests",
+        "path": "tests/test_decision_persistence.py"
+      },
+      {
+        "id": "cloud_sql_run",
+        "label": "Google Cloud - connect Cloud Run to Cloud SQL",
+        "href": "https://cloud.google.com/sql/docs/postgres/connect-run"
+      },
+      {
+        "id": "firebase_sessions",
+        "label": "Firebase - manage session cookies",
+        "href": "https://firebase.google.com/docs/auth/admin/manage-cookies"
+      },
+      {
+        "id": "cloud_monitoring",
+        "label": "Google Cloud - Cloud Run monitoring",
+        "href": "https://cloud.google.com/run/docs/monitoring-overview"
+      },
+      {
+        "id": "cloud_build_run",
+        "label": "Google Cloud - deploy Cloud Run with Cloud Build",
+        "href": "https://cloud.google.com/build/docs/deploying-builds/deploy-cloud-run"
+      }
+    ]
+  },
+  "snapshot": {
+    "version": 1,
+    "generatedAt": "2026-08-15T08:10:00.767Z",
+    "status": "ready",
+    "datasets": {
+      "dataset_quality": [
+        {
+          "dataset": "Crop recommendation",
+          "total_rows": 2200,
+          "unique_rows": 2200,
+          "duplicate_rows": 0,
+          "duplicate_share": 0,
+          "target_classes": 22,
+          "largest_class_share": 0.0454545455,
+          "missing_cells": 0
+        },
+        {
+          "dataset": "Fertilizer recommendation",
+          "total_rows": 552,
+          "unique_rows": 138,
+          "duplicate_rows": 414,
+          "duplicate_share": 0.75,
+          "target_classes": 14,
+          "largest_class_share": 0.1956521739,
+          "missing_cells": 0
+        },
+        {
+          "dataset": "Crop price",
+          "total_rows": 49,
+          "unique_rows": 49,
+          "duplicate_rows": 0,
+          "duplicate_share": 0,
+          "target_classes": 10,
+          "largest_class_share": 0.1020408163,
+          "missing_cells": 0
+        }
+      ]
+    },
+    "accessIssues": []
+  },
+  "sources": [
+    {
+      "id": "readme",
+      "label": "Project operating guide",
+      "path": "README.md"
+    },
+    {
+      "id": "app",
+      "label": "FastAPI application and route contracts",
+      "path": "app.py"
+    },
+    {
+      "id": "ml_services",
+      "label": "Model-serving and fallback logic",
+      "path": "ml_services.py"
+    },
+    {
+      "id": "decision_engine",
+      "label": "Decision rules, trust cards, workflows, and assistant",
+      "path": "decision_engine.py"
+    },
+    {
+      "id": "tests",
+      "label": "Decision-engine unit tests",
+      "path": "tests/test_decision_engine.py"
+    },
+    {
+      "id": "crop_csv",
+      "label": "Crop recommendation dataset",
+      "path": "Jupyter files/Crop_Recommendation.csv"
+    },
+    {
+      "id": "crop_notebook",
+      "label": "Executed crop recommendation notebook",
+      "path": "Jupyter files/Crop_recommendation.ipynb"
+    },
+    {
+      "id": "fertilizer_csv",
+      "label": "Fertilizer recommendation dataset",
+      "path": "Jupyter files/Fertilizer_Recommendation2.csv"
+    },
+    {
+      "id": "fertilizer_notebook",
+      "label": "Executed fertilizer recommendation notebook",
+      "path": "Jupyter files/Fertilizer_recommendation.nbconvert.ipynb"
+    },
+    {
+      "id": "price_csv",
+      "label": "Crop price dataset",
+      "path": "Jupyter files/Crop_Price.csv"
+    },
+    {
+      "id": "price_notebook",
+      "label": "Executed crop price notebook",
+      "path": "Jupyter files/Crop_price_prediction.ipynb"
+    },
+    {
+      "id": "presentation",
+      "label": "Original Krishi AI presentation",
+      "path": "KrishiAI(0.1.0).pptx"
+    },
+    {
+      "id": "dockerfile",
+      "label": "Cloud Run container definition",
+      "path": "Dockerfile"
+    },
+    {
+      "id": "dockerignore",
+      "label": "Docker build-context exclusions",
+      "path": ".dockerignore"
+    },
+    {
+      "id": "requirements",
+      "label": "Python dependency contract",
+      "path": "requirements.txt"
+    },
+    {
+      "id": "dataset_audit",
+      "label": "Repository CSV data-quality audit",
+      "query": {
+        "engine": "SQLite over reviewed audit results",
+        "language": "sql",
+        "description": "Presentation query over counts produced by a complete pandas audit of row counts, exact duplicates, missing cells, and target cardinality in the three repository CSV files.",
+        "sql": "WITH dataset_quality(dataset, total_rows, unique_rows, duplicate_rows, duplicate_share, target_classes, largest_class_share, missing_cells) AS (VALUES ('Crop recommendation', 2200, 2200, 0, 0.0, 22, 0.0454545455, 0), ('Fertilizer recommendation', 552, 138, 414, 0.75, 14, 0.1956521739, 0), ('Crop price', 49, 49, 0, 0.0, 10, 0.1020408163, 0)) SELECT dataset, total_rows, unique_rows, duplicate_rows, duplicate_share, target_classes, largest_class_share, missing_cells FROM dataset_quality ORDER BY duplicate_share DESC, total_rows DESC",
+        "executed_at": "2026-08-15T04:02:34+05:30",
+        "filters": [
+          "All rows",
+          "Exact duplicates measured across all columns",
+          "No sampling"
+        ],
+        "tables_used": [
+          "Jupyter files/Crop_Recommendation.csv",
+          "Jupyter files/Fertilizer_Recommendation2.csv",
+          "Jupyter files/Crop_Price.csv"
+        ]
+      }
+    },
+    {
+      "id": "cloud_source_deploy",
+      "label": "Google Cloud — deploy services from source",
+      "href": "https://cloud.google.com/run/docs/deploying-source-code"
+    },
+    {
+      "id": "cloud_contract",
+      "label": "Google Cloud — Cloud Run container runtime contract",
+      "href": "https://cloud.google.com/run/docs/container-contract"
+    },
+    {
+      "id": "cloud_env",
+      "label": "Google Cloud — configure Cloud Run environment variables",
+      "href": "https://cloud.google.com/run/docs/configuring/services/environment-variables"
+    },
+    {
+      "id": "cloud_secrets",
+      "label": "Google Cloud — configure secrets for Cloud Run",
+      "href": "https://cloud.google.com/run/docs/configuring/secrets"
+    },
+    {
+      "id": "cloud_scaling",
+      "label": "Google Cloud — Cloud Run autoscaling",
+      "href": "https://cloud.google.com/run/docs/about-instance-autoscaling"
+    },
+    {
+      "id": "cloud_logging",
+      "label": "Google Cloud — Cloud Run logging",
+      "href": "https://cloud.google.com/run/docs/logging"
+    },
+    {
+      "id": "cloud_pricing",
+      "label": "Google Cloud — Cloud Run pricing",
+      "href": "https://cloud.google.com/run/pricing"
+    },
+    {
+      "id": "cloud_rollouts",
+      "label": "Google Cloud — rollouts, rollbacks, and traffic migration",
+      "href": "https://cloud.google.com/run/docs/rollouts-rollbacks-traffic-migration"
+    },
+    {
+      "id": "auth",
+      "label": "Firebase authentication and authorization",
+      "path": "auth.py"
+    },
+    {
+      "id": "config",
+      "label": "Fail-closed environment configuration",
+      "path": "config.py"
+    },
+    {
+      "id": "database",
+      "label": "SQLAlchemy engine and transaction boundaries",
+      "path": "database.py"
+    },
+    {
+      "id": "db_models",
+      "label": "Tenant-aware SQLAlchemy schema",
+      "path": "db_models.py"
+    },
+    {
+      "id": "repositories",
+      "label": "Tenant-scoped persistence queries",
+      "path": "repositories.py"
+    },
+    {
+      "id": "migrations",
+      "label": "Initial Alembic migration",
+      "path": "migrations/versions/0001_cloud_schema.py"
+    },
+    {
+      "id": "observability",
+      "label": "Request telemetry and security middleware",
+      "path": "observability.py"
+    },
+    {
+      "id": "ci",
+      "label": "GitHub Actions quality gates",
+      "path": ".github/workflows/ci.yml"
+    },
+    {
+      "id": "cloudbuild",
+      "label": "Migration-first Cloud Build deployment",
+      "path": "cloudbuild.yaml"
+    },
+    {
+      "id": "runbook",
+      "label": "Google Cloud provisioning and operations runbook",
+      "path": "docs/GCP_RUNBOOK.md"
+    },
+    {
+      "id": "auth_tests",
+      "label": "Authentication and session tests",
+      "path": "tests/test_auth.py"
+    },
+    {
+      "id": "tenant_tests",
+      "label": "Cross-tenant repository tests",
+      "path": "tests/test_repositories.py"
+    },
+    {
+      "id": "persistence_tests",
+      "label": "Decision persistence API tests",
+      "path": "tests/test_decision_persistence.py"
+    },
+    {
+      "id": "cloud_sql_run",
+      "label": "Google Cloud - connect Cloud Run to Cloud SQL",
+      "href": "https://cloud.google.com/sql/docs/postgres/connect-run"
+    },
+    {
+      "id": "firebase_sessions",
+      "label": "Firebase - manage session cookies",
+      "href": "https://firebase.google.com/docs/auth/admin/manage-cookies"
+    },
+    {
+      "id": "cloud_monitoring",
+      "label": "Google Cloud - Cloud Run monitoring",
+      "href": "https://cloud.google.com/run/docs/monitoring-overview"
+    },
+    {
+      "id": "cloud_build_run",
+      "label": "Google Cloud - deploy Cloud Run with Cloud Build",
+      "href": "https://cloud.google.com/build/docs/deploying-builds/deploy-cloud-run"
+    }
+  ]
+}

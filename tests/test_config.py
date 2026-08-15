@@ -46,6 +46,32 @@ class ConfigurationTests(unittest.TestCase):
                 firebase_project_id="example-project",
             )
 
+    def test_unknown_environment_name_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ConfigurationError, "APP_ENV"):
+            AppSettings(app_env="prod", auth_mode="demo")
+
+    def test_valid_production_configuration_enables_secure_cookies(self) -> None:
+        settings = AppSettings(
+            app_env="production",
+            auth_mode="firebase",
+            database_url="postgresql+psycopg://example",
+            firebase_project_id="example-project",
+            firebase_web_api_key="public-web-configuration",
+            firebase_auth_domain="example.firebaseapp.com",
+        )
+        self.assertTrue(settings.cookie_secure)
+
+    def test_production_rejects_non_postgresql_database_url(self) -> None:
+        with self.assertRaisesRegex(ConfigurationError, "PostgreSQL"):
+            AppSettings(
+                app_env="production",
+                auth_mode="firebase",
+                database_url="mysql://example",
+                firebase_project_id="example-project",
+                firebase_web_api_key="public-web-configuration",
+                firebase_auth_domain="example.firebaseapp.com",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

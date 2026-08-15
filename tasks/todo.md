@@ -189,14 +189,14 @@
 
 **Acceptance criteria:**
 
-- [ ] The report reflects authentication, persistence, isolation, monitoring, and CI/CD code now present.
-- [ ] No cloud resource is described as live until it has been provisioned and verified.
-- [ ] The canonical HTML remains self-contained and passes desktop/mobile checks.
+- [x] The report reflects authentication, persistence, isolation, monitoring, and CI/CD code now present.
+- [x] No cloud resource is described as live until it has been provisioned and verified.
+- [x] The canonical HTML remains self-contained and passes desktop/mobile checks.
 
 **Verification:**
 
-- [ ] The explainer generation/verification command passes.
-- [ ] Every cited local source path exists.
+- [x] The explainer generation/verification command passes.
+- [x] Every cited local source path exists.
 
 **Dependencies:** Task 8
 
@@ -207,5 +207,5 @@
 ## Checkpoint: Cloud-ready handoff
 
 - [ ] All quality gates pass.
-- [ ] No paid cloud resource was created without explicit project and budget inputs.
-- [ ] Remaining manual configuration is listed with exact commands and evidence boundaries.
+- [x] No paid cloud resource was created without explicit project and budget inputs.
+- [x] Remaining manual configuration is listed with exact commands and evidence boundaries.

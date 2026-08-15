@@ -3,9 +3,9 @@
 {% block title %}Sign in - Krishi Connect{% endblock %}
 
 {% block content %}
-<main class="row justify-content-center" aria-labelledby="login-title">
-    <div class="col-12 col-md-8 col-lg-5">
-        <section class="card border-success">
+<main class="auth-page" aria-labelledby="login-title">
+    <div class="auth-shell">
+        <section class="card border-success auth-card">
             <div class="card-body p-4">
                 <h1 id="login-title" class="h3 mb-3">Sign in to Krishi Connect</h1>
                 {% if auth_mode == "demo" %}
@@ -39,13 +39,13 @@
 {% if auth_mode == "firebase" %}
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
+    import { browserLocalPersistence, initializeAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
 
     const firebaseConfig = {{ firebase_config | tojson }};
     const form = document.getElementById("login-form");
     const button = document.getElementById("login-button");
     const status = document.getElementById("login-status");
-    const auth = getAuth(initializeApp(firebaseConfig));
+    const auth = initializeAuth(initializeApp(firebaseConfig), { persistence: browserLocalPersistence });
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();

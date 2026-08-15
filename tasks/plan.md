@@ -94,14 +94,14 @@ Configuration and validation
 
 - [x] Task 7: Add structured observability, security middleware, and readiness checks
 - [x] Task 8: Add cloud deployment automation, CI gates, and operating documentation
-- [ ] Task 9: Refresh and verify the canonical project explainer
+- [x] Task 9: Refresh and verify the canonical project explainer
 
 ### Checkpoint: Cloud-ready handoff
 
 - [ ] Full test, lint, compile, migration, and container-build checks pass
-- [ ] No secret value is present in tracked configuration
-- [ ] Deployment automation is parameterized and does not create paid resources automatically
-- [ ] Reader-facing documentation distinguishes implemented, configured, demo, and pending-live-data behavior
+- [x] No secret value is present in tracked configuration
+- [x] Deployment automation is parameterized and does not create paid resources automatically
+- [x] Reader-facing documentation distinguishes implemented, configured, demo, and pending-live-data behavior
 
 ## Risks and Mitigations
 

@@ -37,6 +37,7 @@ def configure_json_logger(name: str = "krishi.request") -> logging.Logger:
 
 
 request_logger = configure_json_logger()
+application_logger = configure_json_logger("krishi.application")
 
 
 def request_id_from_header(value: str | None) -> str:
@@ -104,3 +105,10 @@ def error_payload(*, status_code: int, detail: Any, request_id: str | None) -> d
         "error": {"code": f"http_{status_code}", "message": message},
         "request_id": request_id,
     }
+
+
+def sanitize_validation_errors(errors: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    sanitized = []
+    for error in errors:
+        sanitized.append({key: value for key, value in error.items() if key not in {"ctx", "input"}})
+    return sanitized

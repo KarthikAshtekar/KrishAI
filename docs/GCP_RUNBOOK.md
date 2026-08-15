@@ -20,7 +20,8 @@ In Firebase Console for the same Google Cloud project:
 1. Add Firebase to the project.
 2. Register a web application and record `projectId`, `apiKey`, and `authDomain`.
 3. Enable Authentication > Sign-in method > Email/Password.
-4. Create the initial administrator and copy its Firebase UID.
+4. Enable email-enumeration protection and set a tight Identity Toolkit sign-in quota before public access.
+5. Create the initial administrator and copy its Firebase UID.
 
 The web API key identifies Firebase configuration; it is not a Firebase Admin private key. Cloud Run uses its service identity and Application Default Credentials for Admin SDK verification.
 

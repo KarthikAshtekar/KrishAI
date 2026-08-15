@@ -29,7 +29,12 @@ from decision_engine import (
     sample_marketplace_listings,
 )
 from ml_services import VALID_CROP_TYPES, VALID_SOIL_TYPES, KrishiModelService
-from observability import error_payload, request_observability_middleware
+from observability import (
+    application_logger,
+    error_payload,
+    request_observability_middleware,
+    sanitize_validation_errors,
+)
 from repositories import (
     create_audit_event,
     create_decision_record,
@@ -110,7 +115,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         status_code=422,
         content=error_payload(
             status_code=422,
-            detail=jsonable_encoder(exc.errors()),
+            detail=jsonable_encoder(sanitize_validation_errors(exc.errors())),
             request_id=getattr(request.state, "request_id", None),
         ),
     )
@@ -118,6 +123,13 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, _exc: Exception):
+    application_logger.error(
+        {
+            "event": "unhandled_application_error",
+            "request_id": getattr(request.state, "request_id", None),
+            "error_type": type(_exc).__name__,
+        }
+    )
     return JSONResponse(
         status_code=500,
         content=error_payload(
@@ -183,7 +195,7 @@ def fetch_sensor_feeds(results: int = THINGSPEAK_RESULTS) -> list[dict[str, Any]
     except requests.Timeout as exc:
         raise HTTPException(status_code=504, detail="Timeout while fetching data from ThingSpeak") from exc
     except requests.RequestException as exc:
-        raise HTTPException(status_code=502, detail=f"Error fetching data from ThingSpeak: {exc}") from exc
+        raise HTTPException(status_code=502, detail="Unable to fetch data from ThingSpeak") from exc
 
     payload = response.json()
     feeds = payload.get("feeds", []) if isinstance(payload, dict) else []
@@ -194,7 +206,13 @@ def safe_sensor_feeds() -> list[dict[str, Any]]:
     try:
         return fetch_sensor_feeds()
     except HTTPException as exc:
-        print(f"Sensor fetch failed, continuing with unavailable sensor state: {exc}")
+        application_logger.warning(
+            {
+                "event": "sensor_feed_unavailable",
+                "upstream": "ThingSpeak",
+                "status_code": exc.status_code,
+            }
+        )
         return []
 
 
@@ -502,7 +520,7 @@ async def get_disease_prediction(
 
 
 @app.get("/api/data", response_class=JSONResponse)
-async def get_sensor_data(_principal: Annotated[Principal, Depends(get_current_principal)]):
+def get_sensor_data(_principal: Annotated[Principal, Depends(get_current_principal)]):
     feeds = fetch_sensor_feeds()
     return {
         "feeds": feeds,
@@ -520,7 +538,7 @@ async def get_sensor_data(_principal: Annotated[Principal, Depends(get_current_p
 
 
 @app.get("/api/iot/anomalies", response_class=JSONResponse)
-async def get_iot_anomalies(_principal: Annotated[Principal, Depends(get_current_principal)]):
+def get_iot_anomalies(_principal: Annotated[Principal, Depends(get_current_principal)]):
     feeds = safe_sensor_feeds()
     report = detect_iot_anomalies(feeds)
     report["source"] = "ThingSpeak" if feeds else "No live sensor data"
@@ -595,7 +613,7 @@ async def crop_price_prediction(
 
 
 @app.get("/api/decision-card", response_class=JSONResponse)
-async def get_decision_card(
+def get_decision_card(
     request: Request,
     session: Annotated[Session, Depends(get_db)],
     principal: Annotated[Principal, Depends(get_current_principal)],
@@ -608,7 +626,7 @@ async def get_decision_card(
 
 
 @app.post("/api/decision-card", response_class=JSONResponse)
-async def post_decision_card(
+def post_decision_card(
     payload: DecisionCardInput,
     request: Request,
     session: Annotated[Session, Depends(get_db)],
@@ -623,7 +641,7 @@ async def post_decision_card(
 
 
 @app.get("/api/automation-log", response_class=JSONResponse)
-async def get_automation_log(
+def get_automation_log(
     request: Request,
     session: Annotated[Session, Depends(get_db)],
     principal: Annotated[Principal, Depends(get_current_principal)],
@@ -655,7 +673,7 @@ async def get_community_summary(_principal: Annotated[Principal, Depends(get_cur
 
 
 @app.post("/api/assistant", response_class=JSONResponse)
-async def assistant(
+def assistant(
     payload: AssistantInput,
     request: Request,
     session: Annotated[Session, Depends(get_db)],

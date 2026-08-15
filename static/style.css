@@ -22,6 +22,7 @@ body {
     font-family: "Inter", "Segoe UI", Arial, sans-serif;
     font-size: 16px;
     line-height: 1.55;
+    overflow-x: hidden;
 }
 
 .container {
@@ -72,6 +73,24 @@ body {
 .card-header {
     background: #fbfdfb;
     border-bottom: 1px solid var(--krishi-border);
+}
+
+.auth-page {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.auth-shell {
+    max-width: 34rem;
+    min-width: 0;
+    width: 100%;
+}
+
+.auth-card,
+.auth-card .alert,
+.status-footer {
+    overflow-wrap: anywhere;
 }
 
 .bg-primary,

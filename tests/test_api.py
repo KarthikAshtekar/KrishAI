@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import patch
 
+import requests
 from fastapi.testclient import TestClient
 
 from app import app, model_service
@@ -84,6 +85,14 @@ class ApiContractTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 415)
         self.assertEqual(response.json()["detail"], "Only JPEG, PNG, and WebP images are accepted")
+
+    def test_thingspeak_failure_does_not_expose_private_url_details(self):
+        private_detail = "https://api.thingspeak.test/feeds.json?api_key=super-secret"
+        with patch("app.requests.get", side_effect=requests.RequestException(private_detail)):
+            response = self.client.get("/api/data")
+
+        self.assertEqual(response.status_code, 502)
+        self.assertNotIn("super-secret", response.text)
 
 
 if __name__ == "__main__":

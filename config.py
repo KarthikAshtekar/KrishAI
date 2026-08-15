@@ -7,6 +7,7 @@ from functools import lru_cache
 from database import DEFAULT_DATABASE_URL
 
 PRODUCTION_ENVIRONMENTS = {"production", "staging"}
+SUPPORTED_APP_ENVIRONMENTS = {"development", "production", "staging", "test"}
 SUPPORTED_AUTH_MODES = {"demo", "firebase"}
 
 
@@ -36,6 +37,10 @@ class AppSettings:
         object.__setattr__(self, "app_env", normalized_env)
         object.__setattr__(self, "auth_mode", normalized_auth)
 
+        if normalized_env not in SUPPORTED_APP_ENVIRONMENTS:
+            raise ConfigurationError(
+                f"APP_ENV must be one of: {', '.join(sorted(SUPPORTED_APP_ENVIRONMENTS))}"
+            )
         if normalized_auth not in SUPPORTED_AUTH_MODES:
             raise ConfigurationError(f"AUTH_MODE must be one of: {', '.join(sorted(SUPPORTED_AUTH_MODES))}")
         if not 1 <= self.session_duration_days <= 14:
@@ -44,7 +49,7 @@ class AppSettings:
         if self.is_deployed:
             if normalized_auth != "firebase":
                 raise ConfigurationError("AUTH_MODE=firebase is required in staging and production")
-            if self.database_url.startswith("sqlite"):
+            if not self.database_url.startswith(("postgresql://", "postgresql+psycopg://")):
                 raise ConfigurationError("PostgreSQL DATABASE_URL is required in staging and production")
             if not self.firebase_project_id:
                 raise ConfigurationError("FIREBASE_PROJECT_ID is required in staging and production")

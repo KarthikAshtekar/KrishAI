@@ -73,6 +73,15 @@ class AuthenticationApiTests(unittest.TestCase):
             response = client.post("/api/auth/session", json={"id_token": "valid-id-token"})
         self.assertEqual(403, response.status_code)
 
+    def test_validation_error_does_not_reflect_id_token_value(self) -> None:
+        settings = AppSettings(app_env="test", auth_mode="firebase", firebase_project_id="test-project")
+        app.dependency_overrides[get_settings] = lambda: settings
+        token_fragment = "sensitive-id-token-fragment"
+        with TestClient(app) as client:
+            response = client.post("/api/auth/session", json={"id_token": token_fragment * 500})
+        self.assertEqual(422, response.status_code)
+        self.assertNotIn(token_fragment, response.text)
+
     def test_demo_mode_rejects_firebase_session_exchange(self) -> None:
         app.dependency_overrides[get_settings] = lambda: AppSettings(app_env="test", auth_mode="demo")
         with TestClient(app) as client:

@@ -52,12 +52,10 @@ if ! gcloud iam service-accounts describe "${RUNTIME_SERVICE_ACCOUNT}" >/dev/nul
     --display-name "Krishi Connect Cloud Run runtime"
 fi
 
-for role in roles/cloudsql.client roles/secretmanager.secretAccessor; do
-  gcloud projects add-iam-policy-binding "${GCP_PROJECT_ID}" \
-    --member "serviceAccount:${RUNTIME_SERVICE_ACCOUNT}" \
-    --role "${role}" \
-    --quiet >/dev/null
-done
+gcloud projects add-iam-policy-binding "${GCP_PROJECT_ID}" \
+  --member "serviceAccount:${RUNTIME_SERVICE_ACCOUNT}" \
+  --role roles/cloudsql.client \
+  --quiet >/dev/null
 
 if ! gcloud sql instances describe "${CLOUD_SQL_INSTANCE}" >/dev/null 2>&1; then
   gcloud sql instances create "${CLOUD_SQL_INSTANCE}" \
@@ -92,6 +90,10 @@ if ! gcloud secrets describe "${DATABASE_URL_SECRET}" >/dev/null 2>&1; then
   gcloud secrets create "${DATABASE_URL_SECRET}" --replication-policy automatic
 fi
 printf '%s' "${DATABASE_URL}" | gcloud secrets versions add "${DATABASE_URL_SECRET}" --data-file=- >/dev/null
+gcloud secrets add-iam-policy-binding "${DATABASE_URL_SECRET}" \
+  --member "serviceAccount:${RUNTIME_SERVICE_ACCOUNT}" \
+  --role roles/secretmanager.secretAccessor \
+  --quiet >/dev/null
 
 CLOUD_BUILD_SERVICE_ACCOUNT="${CLOUD_BUILD_SERVICE_ACCOUNT:-$(gcloud builds get-default-service-account --project "${GCP_PROJECT_ID}")}"
 gcloud artifacts repositories add-iam-policy-binding "${AR_REPOSITORY}" \
