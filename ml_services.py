@@ -7,7 +7,6 @@ from typing import Any
 import joblib
 import pandas as pd
 
-
 BASE_DIR = Path(__file__).resolve().parent
 MODELS_DIR = BASE_DIR / "models"
 DATA_DIR = BASE_DIR / "Jupyter files"
@@ -41,7 +40,7 @@ def load_model(model_path: Path) -> Any | None:
             return joblib.load(model_path)
         with model_path.open("rb") as file_obj:
             return pickle.load(file_obj)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - serialization libraries raise heterogeneous errors
         print(f"Error loading model {model_path}: {exc}")
         return None
 
@@ -143,7 +142,7 @@ class KrishiModelService:
             data = pd.read_csv(DATA_DIR / "Crop_Price.csv")
             data["Crop"] = data["Crop"].astype(str).str.strip().str.upper()
             return data
-        except Exception as exc:
+        except (OSError, ValueError, pd.errors.ParserError) as exc:
             print(f"Error loading crop price data: {exc}")
             return pd.DataFrame()
 

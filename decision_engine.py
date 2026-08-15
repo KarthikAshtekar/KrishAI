@@ -171,18 +171,17 @@ def detect_iot_anomalies(
             )
 
     humidity = latest["humidity"]
-    if humidity is not None and temperature is not None:
-        if humidity >= 80 and 20 <= temperature <= 32:
-            alerts.append(
-                _alert(
-                    "disease_weather_risk",
-                    "Warning",
-                    "Humidity and temperature are favourable for disease pressure.",
-                    "Inspect leaves and improve field ventilation/drainage where possible.",
-                    "humidity",
-                    humidity,
-                )
+    if humidity is not None and temperature is not None and humidity >= 80 and 20 <= temperature <= 32:
+        alerts.append(
+            _alert(
+                "disease_weather_risk",
+                "Warning",
+                "Humidity and temperature are favourable for disease pressure.",
+                "Inspect leaves and improve field ventilation/drainage where possible.",
+                "humidity",
+                humidity,
             )
+        )
 
     if latest.get("created_at"):
         latest_time = _parse_datetime(latest["created_at"])

@@ -4,7 +4,6 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
-
 NonEmptyText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 ShortLabel = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)]
 Percentage = Annotated[float, Field(ge=0, le=100)]
