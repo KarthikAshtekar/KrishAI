@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -122,7 +122,7 @@ def safe_sensor_feeds() -> list[dict[str, Any]]:
 
 
 def default_decision_payload() -> DecisionCardInput:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     month = now.month
     year = max(now.year, 2023)
     return DecisionCardInput(

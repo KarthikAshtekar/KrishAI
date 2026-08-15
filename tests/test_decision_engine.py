@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from decision_engine import (
     answer_farmer_question,
@@ -23,7 +23,7 @@ class DecisionEngineTests(unittest.TestCase):
                     "field4": 600,
                 }
             ],
-            now=datetime(2026, 7, 6, 10, 5, tzinfo=timezone.utc),
+            now=datetime(2026, 7, 6, 10, 5, tzinfo=UTC),
         )
         codes = {alert["code"] for alert in report["alerts"]}
         self.assertIn("low_moisture", codes)
@@ -121,7 +121,7 @@ class DecisionEngineTests(unittest.TestCase):
                     "field4": 900,
                 }
             ],
-            now=datetime(2026, 7, 6, 10, 5, tzinfo=timezone.utc),
+            now=datetime(2026, 7, 6, 10, 5, tzinfo=UTC),
         )
         self.assertTrue(any(alert["severity"] == "Critical" for alert in report["alerts"]))
 
@@ -136,7 +136,7 @@ class DecisionEngineTests(unittest.TestCase):
                     "field4": 600,
                 }
             ],
-            now=datetime(2026, 7, 6, 10, 5, tzinfo=timezone.utc),
+            now=datetime(2026, 7, 6, 10, 5, tzinfo=UTC),
         )
         workflows = build_workflow_alerts(report["alerts"])
         required = {"trigger", "condition", "severity", "stakeholder_affected", "recommended_action", "data_source", "timestamp", "status"}

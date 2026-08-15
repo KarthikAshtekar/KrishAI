@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 
@@ -71,7 +71,7 @@ def _alert(
         "condition": message,
         "stakeholder_affected": stakeholder,
         "data_source": data_source,
-        "timestamp": (timestamp or datetime.now(timezone.utc)).isoformat(),
+        "timestamp": (timestamp or datetime.now(UTC)).isoformat(),
         "status": "Open" if severity in {"Critical", "Warning"} else "Monitoring",
     }
 
@@ -80,7 +80,7 @@ def detect_iot_anomalies(
     feeds: list[dict[str, Any]] | None,
     now: datetime | None = None,
 ) -> dict[str, Any]:
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
     readings = [normalize_sensor_reading(feed) for feed in feeds or []]
     alerts: list[dict[str, Any]] = []
 
@@ -187,8 +187,8 @@ def detect_iot_anomalies(
         latest_time = _parse_datetime(latest["created_at"])
         if latest_time is not None:
             if latest_time.tzinfo is None:
-                latest_time = latest_time.replace(tzinfo=timezone.utc)
-            age_minutes = (now - latest_time.astimezone(timezone.utc)).total_seconds() / 60
+                latest_time = latest_time.replace(tzinfo=UTC)
+            age_minutes = (now - latest_time.astimezone(UTC)).total_seconds() / 60
             if age_minutes > 180:
                 alerts.append(
                     _alert(
@@ -509,7 +509,7 @@ def build_workflow_alerts(
                     "stakeholder": "Farmer / Buyer",
                     "stakeholder_affected": "Farmer / Buyer",
                     "data_source": "Crop price reference data and demo price-outlook rules",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "status": "Open",
                 }
             )
@@ -525,7 +525,7 @@ def build_workflow_alerts(
                     "stakeholder": "Farmer",
                     "stakeholder_affected": "Farmer",
                     "data_source": "Crop price reference data and demo price-outlook rules",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "status": "Monitoring",
                 }
             )
@@ -543,7 +543,7 @@ def build_workflow_alerts(
                     "stakeholder": "Farmer / Buyer / FPO",
                     "stakeholder_affected": "Farmer / Buyer / FPO",
                     "data_source": "Demo marketplace sample data",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "status": "Monitoring",
                 }
             )
