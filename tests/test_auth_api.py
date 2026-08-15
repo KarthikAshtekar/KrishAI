@@ -85,6 +85,21 @@ class AuthenticationApiTests(unittest.TestCase):
             )
         self.assertEqual(409, response.status_code)
 
+    def test_logout_requires_csrf_and_expires_session_cookie(self) -> None:
+        settings = AppSettings(app_env="test", auth_mode="demo")
+        app.dependency_overrides[get_settings] = lambda: settings
+        with TestClient(app) as client:
+            client.cookies.set(settings.session_cookie_name, "session-to-expire")
+            csrf_response = client.get("/api/auth/csrf")
+            response = client.post(
+                "/api/auth/logout",
+                headers={"X-CSRF-Token": csrf_response.json()["csrf_token"]},
+            )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("signed_out", response.json()["status"])
+        self.assertIn(f"{settings.session_cookie_name}=", response.headers["set-cookie"])
+
 
 if __name__ == "__main__":
     unittest.main()

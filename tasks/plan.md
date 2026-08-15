@@ -67,33 +67,33 @@ Configuration and validation
 
 ### Phase 1: Stability and contracts
 
-- [ ] Task 1: Validate model and API inputs and repair fertilizer moisture handling
-- [ ] Task 2: Add deterministic API integration-test infrastructure
+- [x] Task 1: Validate model and API inputs and repair fertilizer moisture handling
+- [x] Task 2: Add deterministic API integration-test infrastructure
 
 ### Checkpoint: Stable prototype
 
-- [ ] Existing and new tests pass
-- [ ] Every API rejects invalid boundary inputs predictably
-- [ ] Fertilizer recommendations work when moisture is omitted
+- [x] Existing and new tests pass
+- [x] Every API rejects invalid boundary inputs predictably
+- [x] Fertilizer recommendations work when moisture is omitted
 
 ### Phase 2: Persistence and isolation
 
-- [ ] Task 3: Add SQLAlchemy schema and Alembic migrations
-- [ ] Task 4: Add tenant-scoped repositories and cross-tenant tests
-- [ ] Task 5: Add Firebase session authentication and membership authorization
-- [ ] Task 6: Persist decision cards and audit events
+- [x] Task 3: Add SQLAlchemy schema and Alembic migrations
+- [x] Task 4: Add tenant-scoped repositories and cross-tenant tests
+- [x] Task 5: Add Firebase session authentication and membership authorization
+- [x] Task 6: Persist decision cards and audit events
 
 ### Checkpoint: Stateful tenant-aware application
 
-- [ ] Database migrations upgrade and downgrade successfully
-- [ ] A tenant cannot read another tenant's decision history
-- [ ] Production configuration fails closed when authentication is disabled
-- [ ] No runtime feature depends on process-global state
+- [x] Database migrations upgrade and downgrade successfully
+- [x] A tenant cannot read another tenant's decision history
+- [x] Production configuration fails closed when authentication is disabled
+- [x] No runtime feature depends on process-global state
 
 ### Phase 3: Operations and delivery
 
-- [ ] Task 7: Add structured observability, security middleware, and readiness checks
-- [ ] Task 8: Add cloud deployment automation, CI gates, and operating documentation
+- [x] Task 7: Add structured observability, security middleware, and readiness checks
+- [x] Task 8: Add cloud deployment automation, CI gates, and operating documentation
 - [ ] Task 9: Refresh and verify the canonical project explainer
 
 ### Checkpoint: Cloud-ready handoff

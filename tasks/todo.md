@@ -6,15 +6,15 @@
 
 **Acceptance criteria:**
 
-- [ ] Omitting fertilizer moisture uses the documented value of 45.
-- [ ] Out-of-range nutrient, weather, pH, month, year, question, and crop-type values return validation errors.
-- [ ] Internal exceptions are not returned verbatim as HTTP 500 details.
+- [x] Omitting fertilizer moisture uses the documented value of 45.
+- [x] Out-of-range nutrient, weather, pH, month, year, question, and crop-type values return validation errors.
+- [x] Internal exceptions are not returned verbatim as HTTP 500 details.
 
 **Verification:**
 
-- [ ] Focused regression tests fail before and pass after the repair.
-- [ ] `python -m unittest` passes.
-- [ ] `python -m py_compile app.py ml_services.py decision_engine.py` passes.
+- [x] Focused regression tests fail before and pass after the repair.
+- [x] `python -m unittest` passes.
+- [x] `python -m py_compile app.py ml_services.py decision_engine.py` passes.
 
 **Dependencies:** None
 
@@ -28,14 +28,14 @@
 
 **Acceptance criteria:**
 
-- [ ] API tests run against deterministic test configuration.
-- [ ] External sensor calls are replaced at the boundary in tests.
-- [ ] Production and development dependency sets are documented.
+- [x] API tests run against deterministic test configuration.
+- [x] External sensor calls are replaced at the boundary in tests.
+- [x] Production and development dependency sets are documented.
 
 **Verification:**
 
-- [ ] Test discovery runs all unit and API tests.
-- [ ] A clean dependency installation can import the application.
+- [x] Test discovery runs all unit and API tests.
+- [x] A clean dependency installation can import the application.
 
 **Dependencies:** Task 1
 
@@ -45,9 +45,9 @@
 
 ## Checkpoint: Stable prototype
 
-- [ ] All tests pass.
-- [ ] Application imports and compiles.
-- [ ] Fertilizer request without moisture succeeds.
+- [x] All tests pass.
+- [x] Application imports and compiles.
+- [x] Fertilizer request without moisture succeeds.
 
 ## Task 3: Add SQLAlchemy schema and Alembic migrations
 
@@ -55,14 +55,14 @@
 
 **Acceptance criteria:**
 
-- [ ] Schema is represented with SQLAlchemy 2 typed mappings.
-- [ ] Initial Alembic upgrade creates all required tables and constraints.
-- [ ] Migration downgrade removes only objects created by that migration.
+- [x] Schema is represented with SQLAlchemy 2 typed mappings.
+- [x] Initial Alembic upgrade creates all required tables and constraints.
+- [x] Migration downgrade removes only objects created by that migration.
 
 **Verification:**
 
-- [ ] Upgrade and downgrade succeed against a temporary SQLite database.
-- [ ] Schema tests verify required foreign keys and uniqueness constraints.
+- [x] Upgrade and downgrade succeed against a temporary SQLite database.
+- [x] Schema tests verify required foreign keys and uniqueness constraints.
 
 **Dependencies:** Task 2
 
@@ -76,14 +76,14 @@
 
 **Acceptance criteria:**
 
-- [ ] Repository methods require tenant context for tenant-owned records.
-- [ ] Cross-tenant identifiers return no record.
-- [ ] Writes use transactional SQLAlchemy sessions.
+- [x] Repository methods require tenant context for tenant-owned records.
+- [x] Cross-tenant identifiers return no record.
+- [x] Writes use transactional SQLAlchemy sessions.
 
 **Verification:**
 
-- [ ] Repository integration tests use a real temporary SQLite database.
-- [ ] Cross-tenant tests prove that records cannot be read by another tenant.
+- [x] Repository integration tests use a real temporary SQLite database.
+- [x] Cross-tenant tests prove that records cannot be read by another tenant.
 
 **Dependencies:** Task 3
 
@@ -97,14 +97,14 @@
 
 **Acceptance criteria:**
 
-- [ ] Production refuses to start with authentication disabled.
-- [ ] Missing, invalid, and unauthorized identities produce consistent 401 or 403 responses.
-- [ ] Session cookies are HTTP-only, secure in production, and protected by CSRF controls.
+- [x] Production refuses to start with authentication disabled.
+- [x] Missing, invalid, and unauthorized identities produce consistent 401 or 403 responses.
+- [x] Session cookies are HTTP-only, secure in production, and protected by CSRF controls.
 
 **Verification:**
 
-- [ ] Unit tests cover demo, Firebase-verifier failure, role denial, and tenant-membership denial.
-- [ ] API tests cover session creation/logout contracts without external Firebase calls.
+- [x] Unit tests cover demo, Firebase-verifier failure, role denial, and tenant-membership denial.
+- [x] API tests cover session creation/logout contracts without external Firebase calls.
 
 **Dependencies:** Task 4
 
@@ -118,15 +118,15 @@
 
 **Acceptance criteria:**
 
-- [ ] POSTed decision cards are persisted with tenant, actor, request, result, and model-basis metadata.
-- [ ] GET, automation-log, and assistant paths retrieve only the current tenant's latest card.
-- [ ] Significant decisions and authentication actions write audit events.
+- [x] POSTed decision cards are persisted with tenant, actor, request, result, and model-basis metadata.
+- [x] GET, automation-log, and assistant paths retrieve only the current tenant's latest card.
+- [x] Significant decisions and authentication actions write audit events.
 
 **Verification:**
 
-- [ ] API integration test creates then retrieves a decision card.
-- [ ] A second tenant cannot retrieve the first tenant's card.
-- [ ] Application source contains no process-global decision cache.
+- [x] API integration test creates then retrieves a decision card.
+- [x] A second tenant cannot retrieve the first tenant's card.
+- [x] Application source contains no process-global decision cache.
 
 **Dependencies:** Tasks 4 and 5
 
@@ -136,9 +136,9 @@
 
 ## Checkpoint: Stateful tenant-aware application
 
-- [ ] Migrations and repository tests pass.
-- [ ] Authentication and authorization tests pass.
-- [ ] Decision workflow works across separate requests without global state.
+- [x] Migrations and repository tests pass.
+- [x] Authentication and authorization tests pass.
+- [x] Decision workflow works across separate requests without global state.
 
 ## Task 7: Add observability, security middleware, and readiness
 
@@ -146,14 +146,14 @@
 
 **Acceptance criteria:**
 
-- [ ] Every response includes a request ID and baseline security headers.
-- [ ] Request logs contain bounded, structured fields and no body, token, or password data.
-- [ ] `/readyz` reports database and critical model readiness with HTTP 200 or 503.
+- [x] Every response includes a request ID and baseline security headers.
+- [x] Request logs contain bounded, structured fields and no body, token, or password data.
+- [x] `/readyz` reports database and critical model readiness with HTTP 200 or 503.
 
 **Verification:**
 
-- [ ] Middleware tests inspect headers, errors, and request-ID propagation.
-- [ ] Readiness tests cover healthy and unhealthy dependencies.
+- [x] Middleware tests inspect headers, errors, and request-ID propagation.
+- [x] Readiness tests cover healthy and unhealthy dependencies.
 
 **Dependencies:** Task 6
 
@@ -167,15 +167,15 @@
 
 **Acceptance criteria:**
 
-- [ ] CI runs lint, compile, tests, migration checks, dependency audit, and container build.
-- [ ] Deployment files use substitutions or environment variables for project-specific values.
-- [ ] Runbooks explain initial provisioning, migrations, deployment, rollback, backup, and demo/live-data status.
+- [x] CI runs lint, compile, tests, migration checks, dependency audit, and container build.
+- [x] Deployment files use substitutions or environment variables for project-specific values.
+- [x] Runbooks explain initial provisioning, migrations, deployment, rollback, backup, and demo/live-data status.
 
 **Verification:**
 
-- [ ] YAML parses and shell scripts pass syntax checks where tooling is available.
+- [x] YAML parses and shell scripts are documented for Cloud Shell; YAML passed local parsing (no local Bash runtime available).
 - [ ] Docker image builds and `/healthz` responds.
-- [ ] Secret scan finds no real credential values.
+- [x] Secret scan finds no real credential values.
 
 **Dependencies:** Task 7
 
