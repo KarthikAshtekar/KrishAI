@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Sign in - Krishi Connect{% endblock %}
+
+{% block content %}
+<main class="row justify-content-center" aria-labelledby="login-title">
+    <div class="col-12 col-md-8 col-lg-5">
+        <section class="card border-success">
+            <div class="card-body p-4">
+                <h1 id="login-title" class="h3 mb-3">Sign in to Krishi Connect</h1>
+                {% if auth_mode == "demo" %}
+                <div class="alert alert-warning" role="status">
+                    <strong>Demo identity is active.</strong>
+                    Authentication is intentionally bypassed only in this non-production environment.
+                </div>
+                <a class="btn btn-success" href="/decision-intelligence">Continue to the demo</a>
+                {% else %}
+                <p class="text-muted">Use the email and password registered in the project's Firebase Authentication tenant.</p>
+                <form id="login-form" novalidate>
+                    <div class="mb-3">
+                        <label class="form-label" for="email">Email address</label>
+                        <input class="form-control" id="email" name="email" type="email" autocomplete="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="password">Password</label>
+                        <input class="form-control" id="password" name="password" type="password" autocomplete="current-password" required>
+                    </div>
+                    <div id="login-status" class="small mb-3" role="status" aria-live="polite"></div>
+                    <button id="login-button" class="btn btn-success w-100" type="submit">Sign in</button>
+                </form>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+{% if auth_mode == "firebase" %}
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
+
+    const firebaseConfig = {{ firebase_config | tojson }};
+    const form = document.getElementById("login-form");
+    const button = document.getElementById("login-button");
+    const status = document.getElementById("login-status");
+    const auth = getAuth(initializeApp(firebaseConfig));
+
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!form.reportValidity()) return;
+        button.disabled = true;
+        status.className = "small mb-3 text-muted";
+        status.textContent = "Signing in…";
+
+        try {
+            const credential = await signInWithEmailAndPassword(
+                auth,
+                document.getElementById("email").value,
+                document.getElementById("password").value,
+            );
+            const csrfResponse = await fetch("/api/auth/csrf", { credentials: "same-origin" });
+            if (!csrfResponse.ok) throw new Error("Unable to initialize the secure session.");
+            const { csrf_token: csrfToken } = await csrfResponse.json();
+            const response = await fetch("/api/auth/session", {
+                method: "POST",
+                credentials: "same-origin",
+                headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
+                body: JSON.stringify({ id_token: await credential.user.getIdToken(true) }),
+            });
+            if (!response.ok) throw new Error("The account is not authorized for a Krishi Connect tenant.");
+            window.location.assign("/decision-intelligence");
+        } catch (error) {
+            status.className = "small mb-3 text-danger";
+            status.textContent = error instanceof Error ? error.message : "Sign-in failed. Please try again.";
+            button.disabled = false;
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

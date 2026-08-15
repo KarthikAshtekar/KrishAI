@@ -23,6 +23,10 @@ def create_tenant(session: Session, *, slug: str, name: str) -> Tenant:
     return tenant
 
 
+def get_tenant_by_slug(session: Session, *, slug: str) -> Tenant | None:
+    return session.scalar(select(Tenant).where(Tenant.slug == slug))
+
+
 def upsert_user_identity(
     session: Session,
     *,
@@ -73,6 +77,31 @@ def get_active_membership(
         )
     )
     return session.scalar(statement)
+
+
+def create_membership(
+    session: Session,
+    *,
+    tenant_id: str,
+    user_id: str,
+    role: str,
+) -> TenantMembership:
+    existing = session.scalar(
+        select(TenantMembership).where(
+            TenantMembership.tenant_id == tenant_id,
+            TenantMembership.user_id == user_id,
+        )
+    )
+    if existing is not None:
+        existing.role = role
+        existing.is_active = True
+        session.flush()
+        return existing
+
+    membership = TenantMembership(tenant_id=tenant_id, user_id=user_id, role=role)
+    session.add(membership)
+    session.flush()
+    return membership
 
 
 def _tenant_decision_statement(tenant_id: str) -> Select[tuple[DecisionCardRecord]]:

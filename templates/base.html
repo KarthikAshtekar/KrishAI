@@ -50,6 +50,11 @@
                             <i class="bi bi-people"></i> Community
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.url.path == '/login' %}active{% endif %}" href="/login">
+                            <i class="bi bi-shield-lock"></i> Sign in
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -63,8 +68,8 @@
         <div class="container py-4">
             <div class="row g-3">
                 <div class="col-md-4">
-                    <strong>Prototype deployed on Google Cloud Run</strong>
-                    <div class="text-muted small">Working decision intelligence MVP for hackathon validation.</div>
+                    <strong>Cloud Run-ready application</strong>
+                    <div class="text-muted small">Deployment remains configuration-dependent until a GCP project is connected.</div>
                     <div class="text-muted small">Build: f0dfcc4</div>
                 </div>
                 <div class="col-md-4">

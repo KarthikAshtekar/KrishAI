@@ -7,11 +7,13 @@ from typing import Annotated, Any
 
 import requests
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from auth import create_firebase_session, new_csrf_token, validate_csrf
+from config import AppSettings, get_settings
 from decision_engine import (
     answer_farmer_question,
     build_decision_card,
@@ -25,6 +27,7 @@ from schemas import (
     CropRecommendationInput,
     DecisionCardInput,
     FertilizerInput,
+    FirebaseSessionInput,
     PricePredictionInput,
 )
 
@@ -33,6 +36,7 @@ STATIC_DIR = BASE_DIR / "static"
 TEMPLATES_DIR = BASE_DIR / "templates"
 
 load_dotenv(BASE_DIR / ".env")
+APPLICATION_SETTINGS = get_settings()
 STATIC_DIR.mkdir(exist_ok=True)
 
 app = FastAPI(
@@ -210,6 +214,73 @@ async def get_index(request: Request):
 @app.get("/healthz", response_class=JSONResponse)
 async def healthz():
     return {"status": "ok", "service": "krishi-connect"}
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def get_login(request: Request, settings: Annotated[AppSettings, Depends(get_settings)]):
+    return templates.TemplateResponse(
+        request,
+        "login.html",
+        {
+            "auth_mode": settings.auth_mode,
+            "firebase_config": {
+                "apiKey": settings.firebase_web_api_key,
+                "authDomain": settings.firebase_auth_domain,
+                "projectId": settings.firebase_project_id,
+            },
+        },
+    )
+
+
+@app.get("/api/auth/csrf", response_class=JSONResponse)
+async def get_auth_csrf(settings: Annotated[AppSettings, Depends(get_settings)]):
+    token = new_csrf_token()
+    response = JSONResponse({"csrf_token": token})
+    response.set_cookie(
+        settings.csrf_cookie_name,
+        token,
+        httponly=False,
+        secure=settings.cookie_secure,
+        samesite="lax",
+        max_age=10 * 60,
+        path="/",
+    )
+    return response
+
+
+@app.post("/api/auth/session", response_class=JSONResponse)
+async def create_auth_session(
+    payload: FirebaseSessionInput,
+    request: Request,
+    settings: Annotated[AppSettings, Depends(get_settings)],
+):
+    if settings.auth_mode != "firebase":
+        raise HTTPException(status_code=409, detail="Firebase authentication is not configured")
+    validate_csrf(request, settings)
+    cookie, claims = create_firebase_session(payload.id_token, settings=settings)
+    response = JSONResponse({"status": "authenticated", "uid": claims.get("uid") or claims.get("sub")})
+    response.set_cookie(
+        settings.session_cookie_name,
+        cookie,
+        httponly=True,
+        secure=settings.cookie_secure,
+        samesite="lax",
+        max_age=settings.session_duration_days * 24 * 60 * 60,
+        path="/",
+    )
+    return response
+
+
+@app.post("/api/auth/logout", response_class=JSONResponse)
+async def logout(
+    request: Request,
+    settings: Annotated[AppSettings, Depends(get_settings)],
+):
+    validate_csrf(request, settings)
+    response = JSONResponse({"status": "signed_out"})
+    response.delete_cookie(settings.session_cookie_name, path="/", secure=settings.cookie_secure, samesite="lax")
+    response.delete_cookie(settings.csrf_cookie_name, path="/", secure=settings.cookie_secure, samesite="lax")
+    return response
 
 
 @app.get("/dashboard", response_class=HTMLResponse)

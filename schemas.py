@@ -51,3 +51,7 @@ class DecisionCardInput(StrictInputModel):
 
 class AssistantInput(StrictInputModel):
     question: Annotated[NonEmptyText, StringConstraints(max_length=1_000)]
+
+
+class FirebaseSessionInput(StrictInputModel):
+    id_token: Annotated[NonEmptyText, StringConstraints(max_length=10_000)]
