@@ -54,8 +54,10 @@ Cloud Run is allowed to receive unauthenticated HTTPS traffic because users need
 
 SQLite is built into Python and is intentionally supported for local development/tests only.
 
+Use **Python 3.13** (also used by Docker and CI). The pinned NumPy version requires Python 3.12 or newer.
+
 ```powershell
-python -m venv .venv
+py -3.13 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 Copy-Item .env.example .env
 .\.venv\Scripts\alembic.exe upgrade head
@@ -98,6 +100,8 @@ Copy `.env.example`; never commit `.env`.
 The backend uses Application Default Credentials for Firebase Admin. Never download or commit a service-account JSON key for Cloud Run.
 
 ## Tests and quality gates
+
+The September application review, responsive UI changes, verification results and browser test instructions are in [docs/UI_REVIEW.md](docs/UI_REVIEW.md).
 
 ```powershell
 .\.venv\Scripts\ruff.exe check .
