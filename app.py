@@ -1,17 +1,19 @@
 from __future__ import annotations
 
+import math
 import os
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any
+from urllib.parse import quote
 
 import requests
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -78,6 +80,7 @@ app = FastAPI(
 )
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+templates.env.globals["app_auth_mode"] = APPLICATION_SETTINGS.auth_mode
 model_service = KrishiModelService()
 
 THINGSPEAK_CHANNEL_ID = os.getenv("THINGSPEAK_CHANNEL_ID", "2914283")
@@ -98,6 +101,13 @@ async def add_request_observability(request: Request, call_next):
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    if (
+        exc.status_code == 401
+        and request.method == "GET"
+        and not request.url.path.startswith("/api/")
+        and "text/html" in request.headers.get("accept", "")
+    ):
+        return RedirectResponse(f"/login?next={quote(request.url.path, safe='')}", status_code=303)
     return JSONResponse(
         status_code=exc.status_code,
         content=error_payload(
@@ -159,7 +169,8 @@ def _safe_float(value: Any) -> float | None:
     if value in (None, ""):
         return None
     try:
-        return float(value)
+        number = float(value)
+        return number if math.isfinite(number) else None
     except (TypeError, ValueError):
         return None
 
@@ -197,9 +208,17 @@ def fetch_sensor_feeds(results: int = THINGSPEAK_RESULTS) -> list[dict[str, Any]
     except requests.RequestException as exc:
         raise HTTPException(status_code=502, detail="Unable to fetch data from ThingSpeak") from exc
 
-    payload = response.json()
-    feeds = payload.get("feeds", []) if isinstance(payload, dict) else []
-    return [clean_thingspeak_feed(feed) for feed in feeds if feed.get("created_at")]
+    try:
+        payload = response.json()
+    except ValueError as exc:
+        raise HTTPException(status_code=502, detail="Invalid sensor response from ThingSpeak") from exc
+    if not isinstance(payload, dict) or not isinstance(payload.get("feeds"), list):
+        raise HTTPException(status_code=502, detail="Invalid sensor response from ThingSpeak")
+    return [
+        clean_thingspeak_feed(feed)
+        for feed in payload["feeds"]
+        if isinstance(feed, dict) and feed.get("created_at")
+    ]
 
 
 def safe_sensor_feeds() -> list[dict[str, Any]]:
@@ -366,7 +385,7 @@ async def healthz():
 
 
 @app.get("/readyz", response_class=JSONResponse)
-async def readyz():
+def readyz():
     database_ready = database_is_ready()
     model_status = model_service.readiness_status()
     ready = database_ready and model_status["ready"]
@@ -412,7 +431,7 @@ async def get_auth_csrf(settings: Annotated[AppSettings, Depends(get_settings)])
 
 
 @app.post("/api/auth/session", response_class=JSONResponse)
-async def create_auth_session(
+def create_auth_session(
     payload: FirebaseSessionInput,
     request: Request,
     settings: Annotated[AppSettings, Depends(get_settings)],
@@ -456,7 +475,7 @@ async def create_auth_session(
 
 
 @app.post("/api/auth/logout", response_class=JSONResponse)
-async def logout(
+def logout(
     request: Request,
     settings: Annotated[AppSettings, Depends(get_settings)],
     session: Annotated[Session, Depends(get_db)],
@@ -524,6 +543,7 @@ def get_sensor_data(_principal: Annotated[Principal, Depends(get_current_princip
     feeds = fetch_sensor_feeds()
     return {
         "feeds": feeds,
+        "anomalies": detect_iot_anomalies(feeds),
         "source": "ThingSpeak",
         "channel_id": THINGSPEAK_CHANNEL_ID,
         "api_key_configured": bool(THINGSPEAK_READ_API_KEY),
@@ -568,7 +588,7 @@ async def predict_disease(
 
 
 @app.post("/api/crop-recommendation")
-async def crop_recommendation(
+def crop_recommendation(
     input_data: Annotated[CropRecommendationInput, Form()],
     _principal: Annotated[Principal, Depends(get_current_principal)],
 ):
@@ -583,7 +603,7 @@ async def crop_recommendation(
 
 
 @app.post("/api/fertilizer-recommendation")
-async def fertilizer_recommendation(
+def fertilizer_recommendation(
     input_data: FertilizerInput,
     _principal: Annotated[Principal, Depends(get_current_principal)],
 ):
@@ -598,7 +618,7 @@ async def fertilizer_recommendation(
 
 
 @app.post("/api/crop-price-prediction")
-async def crop_price_prediction(
+def crop_price_prediction(
     input_data: Annotated[PricePredictionInput, Form()],
     _principal: Annotated[Principal, Depends(get_current_principal)],
 ):
