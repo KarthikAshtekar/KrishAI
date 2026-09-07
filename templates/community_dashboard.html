@@ -7,8 +7,8 @@
     <div class="col-12">
         <div class="platform-hero">
             <div class="page-kicker">FPO / community dashboard</div>
-            <h1 class="h3 mb-2">Krishi Connect: Agricultural Decision Intelligence Platform</h1>
-            <p class="mb-3 text-muted">Connecting farm data, AI models, IoT signals, and market intelligence for better rural decisions.</p>
+            <h1 class=" mb-2">Community overview</h1>
+            <p class="mb-3 text-muted">A sample view of shared risks, expected supply, and suggested FPO actions.</p>
             <span class="status-pill status-demo">Demo aggregation</span>
             <span class="status-pill status-rule">Rule-based community actions</span>
         </div>
@@ -99,8 +99,7 @@
 
 {% block extra_js %}
 <script>
-    fetch('/api/community/summary')
-        .then(response => response.json())
+    Krishi.request('/api/community/summary')
         .then(data => {
             document.getElementById('communityInsight').textContent = data.community_insight;
             document.getElementById('totalFarmers').textContent = data.total_farmers_monitored;
@@ -111,19 +110,19 @@
             const crops = document.getElementById('recommendedCrops');
             crops.innerHTML = '';
             (data.most_recommended_crops || []).forEach(([crop, count]) => {
-                crops.insertAdjacentHTML('beforeend', `<div class="audit-row mb-3"><strong>${crop}</strong><div>${count} monitored farmer(s)</div></div>`);
+                crops.insertAdjacentHTML('beforeend', `<div class="audit-row mb-3"><strong>${Krishi.escapeHTML(crop)}</strong><div>${Krishi.escapeHTML(count)} monitored farmer(s)</div></div>`);
             });
 
             const supply = document.getElementById('supplyList');
             supply.innerHTML = '';
             Object.entries(data.expected_supply_by_crop).forEach(([crop, quantity]) => {
-                supply.insertAdjacentHTML('beforeend', `<div class="audit-row mb-3"><strong>${crop}</strong><div>${quantity}</div></div>`);
+                supply.insertAdjacentHTML('beforeend', `<div class="audit-row mb-3"><strong>${Krishi.escapeHTML(crop)}</strong><div>${Krishi.escapeHTML(quantity)}</div></div>`);
             });
 
             const actions = document.getElementById('communityActions');
             actions.innerHTML = '';
             data.suggested_community_actions.forEach(action => {
-                actions.insertAdjacentHTML('beforeend', `<div class="audit-row mb-3">${action}</div>`);
+                actions.insertAdjacentHTML('beforeend', `<div class="audit-row mb-3">${Krishi.escapeHTML(action)}</div>`);
             });
 
             const recommendations = document.getElementById('communityRecommendations');
@@ -131,10 +130,10 @@
             (data.community_decision_recommendations || data.suggested_community_actions || []).forEach(action => {
                 recommendations.insertAdjacentHTML('beforeend', `
                     <div class="col-md-6">
-                        <div class="community-action-card">${action}</div>
+                        <div class="community-action-card">${Krishi.escapeHTML(action)}</div>
                     </div>
                 `);
             });
-        });
+        }).catch(error => Krishi.loadFailure(error, () => location.reload()));
 </script>
 {% endblock %}

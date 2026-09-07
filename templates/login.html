@@ -3,7 +3,7 @@
 {% block title %}Sign in - Krishi Connect{% endblock %}
 
 {% block content %}
-<main class="auth-page" aria-labelledby="login-title">
+<div class="auth-page" aria-labelledby="login-title">
     <div class="auth-shell">
         <section class="card border-success auth-card">
             <div class="card-body p-4">
@@ -15,7 +15,7 @@
                 </div>
                 <a class="btn btn-success" href="/decision-intelligence">Continue to the demo</a>
                 {% else %}
-                <p class="text-muted">Use the email and password registered in the project's Firebase Authentication tenant.</p>
+                <p class="text-muted">Use the account provided by your farm or organization.</p>
                 <form id="login-form" novalidate>
                     <div class="mb-3">
                         <label class="form-label" for="email">Email address</label>
@@ -32,20 +32,20 @@
             </div>
         </section>
     </div>
-</main>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 {% if auth_mode == "firebase" %}
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
-    import { browserLocalPersistence, initializeAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
+    import { inMemoryPersistence, initializeAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
 
     const firebaseConfig = {{ firebase_config | tojson }};
     const form = document.getElementById("login-form");
     const button = document.getElementById("login-button");
     const status = document.getElementById("login-status");
-    const auth = initializeAuth(initializeApp(firebaseConfig), { persistence: browserLocalPersistence });
+    const auth = initializeAuth(initializeApp(firebaseConfig), { persistence: inMemoryPersistence });
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -70,7 +70,10 @@
                 body: JSON.stringify({ id_token: await credential.user.getIdToken(true) }),
             });
             if (!response.ok) throw new Error("The account is not authorized for a Krishi Connect tenant.");
-            window.location.assign("/decision-intelligence");
+            const destination = new URLSearchParams(location.search).get('next');
+            const allowed = ['/', '/farmer-dashboard', '/decision-intelligence', '/dashboard', '/marketplace', '/community-dashboard', '/disease-prediction'];
+            const path = destination?.split('#')[0];
+            window.location.assign(allowed.includes(path) ? destination : '/farmer-dashboard');
         } catch (error) {
             status.className = "small mb-3 text-danger";
             status.textContent = error instanceof Error ? error.message : "Sign-in failed. Please try again.";

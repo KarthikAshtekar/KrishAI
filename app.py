@@ -375,6 +375,7 @@ async def get_index(request: Request, _principal: Annotated[Principal, Depends(g
             "available_crops": model_service.available_price_crops,
             "valid_soil_types": VALID_SOIL_TYPES,
             "valid_crop_types": VALID_CROP_TYPES,
+            "current_year": datetime.now(UTC).year,
         },
     )
 
