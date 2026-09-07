@@ -784,7 +784,23 @@ def answer_farmer_question(
         )
 
     if any(keyword in text for keyword in ["irrigate", "water", "moisture"]):
-        moisture_alerts = [alert for alert in alerts if "moisture" in alert.get("code", "")]
+        latest = anomalies.get("latest_reading") or {}
+        moisture = _parse_float(latest.get("soil_moisture"))
+        unavailable = moisture is None or not 0 <= moisture <= 100
+        stale = any(alert.get("code") in {"no_sensor_data", "stale_sensor_data"} for alert in alerts)
+        if unavailable or stale:
+            return response(
+                "I cannot assess current irrigation needs from missing, stale, or invalid moisture readings.",
+                "irrigation_advice",
+                ["latest anomaly report"],
+                "Verify current soil moisture and the sensor connection before deciding on irrigation.",
+                "Low",
+                ["Current, valid field readings are needed for irrigation guidance."],
+                "data unavailable",
+            )
+        moisture_alerts = [
+            alert for alert in alerts if alert.get("code") in {"critical_low_moisture", "low_moisture"}
+        ]
         if moisture_alerts:
             first = moisture_alerts[0]
             return response(

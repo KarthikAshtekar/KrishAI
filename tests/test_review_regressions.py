@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from app import app, clean_thingspeak_feed
 from config import AppSettings, get_settings
+from decision_engine import answer_farmer_question
 
 
 class ReviewRegressionTests(unittest.TestCase):
@@ -16,6 +17,24 @@ class ReviewRegressionTests(unittest.TestCase):
         self.assertIsNone(feed["temperature"])
         self.assertIsNone(feed["humidity"])
         self.assertIsNone(feed["light_intensity"])
+
+    def test_irrigation_assistant_does_not_reassure_with_missing_or_stale_data(self):
+        for code in ["no_sensor_data", "stale_sensor_data"]:
+            with self.subTest(code=code):
+                result = answer_farmer_question("Should I irrigate?", {}, {
+                    "alerts": [{"code": code, "message": "Readings need verification"}],
+                    "latest_reading": None,
+                })
+                self.assertEqual(result["confidence"], "Low")
+                self.assertIn("verify", result["recommended_action"].lower())
+                self.assertNotIn("No urgent irrigation alert", result["answer"])
+
+    def test_sudden_moisture_change_does_not_imply_irrigation_is_needed(self):
+        result = answer_farmer_question("Should I irrigate?", {}, {
+            "latest_reading": {"soil_moisture": 55},
+            "alerts": [{"code": "sudden_moisture_change", "message": "Moisture changed", "recommended_action": "Inspect"}],
+        })
+        self.assertNotIn("Yes, irrigation", result["answer"])
 
     def test_malformed_sensor_payload_returns_gateway_error(self):
         for payload in ({"feeds": None}, {"feeds": "invalid"}, [1, 2]):
