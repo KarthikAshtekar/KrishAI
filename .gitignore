@@ -21,3 +21,13 @@ uvicorn-startup.*.log
 
 *.tmp
 *.bak
+
+*.db
+*.db-shm
+*.db-wal
+
+.browser-tools/
+artifacts/ui-review/
+baseline-mobile.png
+review-desktop.png
+review-mobile.png

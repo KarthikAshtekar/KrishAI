@@ -7,11 +7,11 @@
     <div class="col-12">
         <div class="platform-hero">
             <div class="page-kicker">Farmer dashboard</div>
-            <h1 class="h3 mb-2">Krishi Connect: Agricultural Decision Intelligence Platform</h1>
-            <p class="mb-3 text-muted">Connecting farm data, AI models, IoT signals, and market intelligence for better rural decisions.</p>
+            <h1 class=" mb-2">Your farm, at a glance</h1>
+            <p class="mb-3 text-muted">Review your latest plan and the conditions behind each suggestion.</p>
             <div class="d-flex flex-wrap gap-2">
                 <span class="status-pill status-model">Model-based</span>
-                <span class="status-pill status-rule">Real-time IoT</span>
+                <span class="status-pill status-rule">Sensors when connected</span>
                 <span class="status-pill status-rule">Rule-based alerts</span>
                 <span class="status-pill status-demo">Demo price fallback</span>
             </div>
@@ -20,7 +20,7 @@
 
     <div class="col-lg-8">
         <section class="recommendation-panel h-100">
-            <div class="page-kicker">What should the farmer do today?</div>
+            <div class="page-kicker">Your next step</div><p class="small text-muted" id="farmerInputMode">Checking plan inputs…</p>
             <div class="recommendation-value" id="todayAction">Loading...</div>
             <div class="action-plan mb-3">
                 <h3 class="h5">Today's Action Plan</h3>
@@ -83,7 +83,7 @@
     <div class="col-lg-5">
         <section class="decision-summary p-4 h-100">
             <h2 class="h4">Assistant</h2>
-            <div class="assistant-log mb-3" id="farmerAssistantLog">
+            <div class="assistant-log mb-3" id="farmerAssistantLog" role="log" aria-live="polite">
                 <div class="assistant-message text-muted">Try: What should I do today?</div>
             </div>
             <div class="d-flex flex-wrap gap-2 mb-3">
@@ -94,8 +94,8 @@
                 <button class="btn btn-sm btn-outline-success quick-question" type="button" onclick="askFarmerAssistant('What alerts do I have?')">What alerts do I have?</button>
             </div>
             <form id="farmerAssistantForm" class="d-flex gap-2">
-                <input class="form-control" id="farmerAssistantQuestion" placeholder="What alerts do I have today?" required>
-                <button class="btn btn-success" type="submit"><i class="bi bi-send"></i></button>
+                <input class="form-control" id="farmerAssistantQuestion" aria-label="Ask about your farm" maxlength="1000" placeholder="What alerts do I have today?" required>
+                <button class="btn btn-success" type="submit" aria-label="Send question"><i class="bi bi-send"></i></button>
             </form>
         </section>
     </div>
@@ -111,15 +111,15 @@
             const item = document.createElement('div');
             const severityClass = alert.severity === 'Critical' ? 'severity-critical' : alert.severity === 'Warning' ? 'severity-warning' : 'severity-info';
             const icon = alert.severity === 'Critical' ? 'bi-exclamation-octagon' : alert.severity === 'Warning' ? 'bi-exclamation-triangle' : 'bi-info-circle';
-            item.className = `alert-list-item ${alert.severity === 'Critical' ? 'alert-critical' : alert.severity === 'Warning' ? 'alert-warning' : 'alert-info'}`;
+            item.className = `alert-list-item ${Krishi.escapeHTML(alert.severity === 'Critical' ? 'alert-critical' : alert.severity === 'Warning' ? 'alert-warning' : 'alert-info')}`;
             item.innerHTML = `
-                <div class="alert-icon"><i class="bi ${icon}"></i></div>
+                <div class="alert-icon"><i class="bi ${Krishi.escapeHTML(icon)}"></i></div>
                 <div>
                     <div class="d-flex flex-wrap justify-content-between gap-2 mb-1">
-                        <strong>${alert.message}</strong>
-                        <span class="severity-badge ${severityClass}">${alert.severity}</span>
+                        <strong>${Krishi.escapeHTML(alert.message)}</strong>
+                        <span class="severity-badge ${Krishi.escapeHTML(severityClass)}">${Krishi.escapeHTML(alert.severity)}</span>
                     </div>
-                    <small class="text-muted">${alert.recommended_action}</small>
+                    <small class="text-muted">${Krishi.escapeHTML(alert.recommended_action)}</small>
                 </div>
             `;
             target.appendChild(item);
@@ -134,72 +134,48 @@
             item.className = 'trust-card p-3 mb-3';
             item.innerHTML = `
                 <div class="d-flex justify-content-between gap-2">
-                    <strong>${card.title}</strong>
-                    <span class="status-pill ${card.basis.includes('demo') ? 'status-demo' : card.basis.includes('rule') ? 'status-rule' : 'status-model'}">${card.basis}</span>
+                    <strong>${Krishi.escapeHTML(card.title)}</strong>
+                    <span class="status-pill ${Krishi.escapeHTML(card.basis.includes('demo') ? 'status-demo' : card.basis.includes('rule') ? 'status-rule' : 'status-model')}">${Krishi.escapeHTML(card.basis)}</span>
                 </div>
-                <div class="mt-2">${card.why}</div>
-                <small class="text-muted">Reliability: ${card.confidence} | Source: ${card.data_source}</small>
+                <div class="mt-2">${Krishi.escapeHTML(card.why)}</div>
+                <small class="text-muted">Reliability: ${Krishi.escapeHTML(card.confidence)} | Source: ${Krishi.escapeHTML(card.data_source)}</small>
             `;
             target.appendChild(item);
         });
     }
 
     function loadFarmerDashboard() {
-        fetch('/api/decision-card')
-            .then(response => response.json())
+        Krishi.request('/api/decision-card')
             .then(card => {
+                document.getElementById('farmerInputMode').textContent = 'Inputs: ' + card.input_mode;
                 const alerts = card.alerts || [];
                 const workflows = card.automation_log || card.workflow_alerts || [];
-                const moistureAlerts = alerts.filter(alert => (alert.code || '').includes('moisture'));
+                const moistureAlerts = alerts.filter(alert => ['low_moisture', 'critical_low_moisture'].includes(alert.code));
                 const plan = [
                     card.final_recommended_action,
                     ...(workflows || []).slice(0, 3).map(item => item.recommended_action),
                     'Review local field conditions before acting on demo price or marketplace guidance.'
                 ].filter(Boolean).slice(0, 5);
                 document.getElementById('todayAction').textContent = card.final_recommended_action;
-                document.getElementById('todayActionPlan').innerHTML = plan.map(item => `<li>${item}</li>`).join('');
+                document.getElementById('todayActionPlan').innerHTML = plan.map(item => `<li>${Krishi.escapeHTML(item)}</li>`).join('');
                 document.getElementById('farmerCrop').textContent = card.recommended_crop;
                 document.getElementById('farmerFertilizer').textContent = card.fertilizer_recommendation;
                 document.getElementById('farmerRisk').textContent = card.risk_level;
                 document.getElementById('farmerPrice').textContent = card.price_outlook;
-                document.getElementById('irrigationNeeded').textContent = moistureAlerts.length ? 'Yes' : 'Monitor';
                 const latest = card.latest_sensor_reading || {};
-                document.getElementById('iotStatus').textContent = `Moisture: ${latest.soil_moisture ?? 'N/A'}, Temperature: ${latest.temperature ?? 'N/A'}, Humidity: ${latest.humidity ?? 'N/A'}`;
+                const moisture = latest.soil_moisture;
+                const verifyData = moisture == null || !Number.isFinite(Number(moisture)) || moisture < 0 || moisture > 100 || alerts.some(alert => ['no_sensor_data', 'stale_sensor_data'].includes(alert.code));
+                document.getElementById('irrigationNeeded').textContent = verifyData ? 'Verify data' : moistureAlerts.length ? 'Review irrigation' : 'Monitor';
+                document.getElementById('iotStatus').textContent = `Moisture: ${Krishi.escapeHTML(latest.soil_moisture ?? 'N/A')}, Temperature: ${Krishi.escapeHTML(latest.temperature ?? 'N/A')}, Humidity: ${Krishi.escapeHTML(latest.humidity ?? 'N/A')}`;
                 renderAlertList(alerts);
                 renderTrustList(card.explanation_trust || []);
+            }).catch(error => {
+                document.getElementById('todayAction').textContent = 'Plan unavailable';
+                Krishi.loadFailure(error, loadFarmerDashboard);
             });
     }
 
-    function askFarmerAssistant(question) {
-        const log = document.getElementById('farmerAssistantLog');
-        log.insertAdjacentHTML('beforeend', `<div class="assistant-message"><strong>You:</strong> ${question}</div>`);
-        fetch('/api/assistant', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({question})
-        })
-        .then(response => response.json())
-        .then(result => {
-            log.insertAdjacentHTML('beforeend', `
-                <div class="assistant-message">
-                    <strong>Answer:</strong> ${result.answer}
-                    <br><small class="text-muted">Recommended action: ${result.recommended_action}</small>
-                    <br><small class="text-muted">Data used: ${(result.data_used || []).join('; ') || 'Not available'}</small>
-                    <br><small class="text-muted">Confidence: ${result.confidence}</small>
-                    <br><small class="text-muted">Limitation: ${(result.limitations || []).join('; ') || 'None listed'}</small>
-                </div>
-            `);
-            log.scrollTop = log.scrollHeight;
-        });
-    }
-
-    document.getElementById('farmerAssistantForm').addEventListener('submit', function(event) {
-        event.preventDefault();
-        const questionInput = document.getElementById('farmerAssistantQuestion');
-        const question = questionInput.value;
-        questionInput.value = '';
-        askFarmerAssistant(question);
-    });
+    const askFarmerAssistant = Krishi.bindAssistant({formId: 'farmerAssistantForm', inputId: 'farmerAssistantQuestion', logId: 'farmerAssistantLog'});
 
     loadFarmerDashboard();
 </script>

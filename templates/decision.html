@@ -9,15 +9,15 @@
             <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start">
                 <div>
                     <div class="page-kicker">Agriculture and rural decision intelligence</div>
-                    <h1 class="h3 mb-2">Krishi Connect: Agricultural Decision Intelligence Platform</h1>
-                    <p class="mb-0 text-muted">Connecting farm data, AI models, IoT signals, and market intelligence for better rural decisions.</p>
+                    <h1 class=" mb-2">Decision overview</h1>
+                    <p class="mb-0 text-muted">Review the latest saved decision, its inputs, and the reasons behind it.</p>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
                     <span class="status-pill status-model">Model-based</span>
                     <span class="status-pill status-rule">Rule-based</span>
-                    <span class="status-pill status-rule">Real-time IoT</span>
+                    <span class="status-pill status-rule">Sensors when connected</span>
                     <span class="status-pill status-demo">Demo data</span>
-                    <span class="status-pill status-prototype">Disabled prototype</span>
+
                 </div>
             </div>
         </div>
@@ -70,7 +70,7 @@
     <div class="col-lg-8">
         <div class="card app-card h-100">
             <div class="card-header">
-                <h4 class="mb-0"><i class="bi bi-clipboard-data"></i> Decision Card</h4>
+                <h2 class="mb-0"><i class="bi bi-clipboard-data"></i> Decision Card</h2>
             </div>
             <div class="card-body">
                 <div class="row g-3">
@@ -123,7 +123,7 @@
     <div class="col-lg-4">
         <div class="card app-card h-100">
             <div class="card-header">
-                <h4 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Active Alerts</h4>
+                <h2 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Active Alerts</h2>
             </div>
             <div class="card-body" id="decisionAlerts">
                 Loading alerts...
@@ -132,23 +132,19 @@
     </div>
 
     <div class="col-lg-7">
-        <div class="card app-card h-100">
-            <div class="card-header">
-                <h4 class="mb-0"><i class="bi bi-lightning-charge"></i> Workflow Automation</h4>
-            </div>
-            <div class="card-body" id="workflowAlerts">
+        <details class="app-card"><summary>Workflow Automation</summary><div class="card-body" id="workflowAlerts">
                 Loading workflow rules...
             </div>
-        </div>
+        </details>
     </div>
 
     <div class="col-lg-5">
         <div class="card app-card h-100">
             <div class="card-header">
-                <h4 class="mb-0"><i class="bi bi-chat-dots"></i> Farmer Assistant</h4>
+                <h2 class="mb-0"><i class="bi bi-chat-dots"></i> Farmer Assistant</h2>
             </div>
             <div class="card-body">
-                <div class="assistant-log mb-3" id="assistantLog">
+                <div class="assistant-log mb-3" id="assistantLog" role="log" aria-live="polite">
                     <div class="assistant-message text-muted">Ask about crop choice, irrigation, risk, fertilizer, price, or alerts.</div>
                 </div>
                 <div class="d-flex flex-wrap gap-2 mb-3">
@@ -159,8 +155,8 @@
                     <button class="btn btn-sm btn-outline-success quick-question" type="button" onclick="askAssistant('What alerts do I have?')">What alerts do I have?</button>
                 </div>
                 <form id="assistantForm" class="d-flex gap-2">
-                    <input class="form-control" id="assistantQuestion" placeholder="Should I irrigate today?" required>
-                    <button class="btn btn-success" type="submit"><i class="bi bi-send"></i></button>
+                    <input class="form-control" id="assistantQuestion" aria-label="Ask about your farm" maxlength="1000" placeholder="Should I irrigate today?" required>
+                    <button class="btn btn-success" type="submit" aria-label="Send question"><i class="bi bi-send"></i></button>
                 </form>
             </div>
         </div>
@@ -169,7 +165,7 @@
     <div class="col-12">
         <div class="card app-card">
             <div class="card-header">
-                <h4 class="mb-0"><i class="bi bi-shield-check"></i> Explanation & Trust</h4>
+                <h2 class="mb-0"><i class="bi bi-shield-check"></i> Explanation & Trust</h2>
             </div>
             <div class="card-body">
                 <div class="row g-3" id="explanationTrust">
@@ -181,22 +177,14 @@
     </div>
 
     <div class="col-12">
-        <div class="card app-card">
-            <div class="card-header">
-                <h4 class="mb-0"><i class="bi bi-list-check"></i> Decision Audit Trail</h4>
-            </div>
-            <div class="card-body" id="automationLog">
+        <details class="app-card"><summary>Decision Audit Trail</summary><div class="card-body" id="automationLog">
                 Loading automation log...
             </div>
-        </div>
+        </details>
     </div>
 
     <div class="col-12">
-        <div class="card app-card">
-            <div class="card-header">
-                <h4 class="mb-0"><i class="bi bi-people"></i> Stakeholder Snapshot</h4>
-            </div>
-            <div class="card-body">
+        <details class="app-card"><summary>Stakeholder Snapshot</summary><div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-4">
                         <div class="metric-card p-3 h-100">
@@ -218,7 +206,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </details>
     </div>
 </div>
 {% endblock %}
@@ -238,15 +226,15 @@
             const item = document.createElement('div');
             const severityClass = alert.severity === 'Critical' ? 'severity-critical' : alert.severity === 'Warning' ? 'severity-warning' : 'severity-info';
             const icon = alert.severity === 'Critical' ? 'bi-exclamation-octagon' : alert.severity === 'Warning' ? 'bi-exclamation-triangle' : 'bi-info-circle';
-            item.className = `alert-list-item ${alertClass(alert.severity)}`;
+            item.className = `alert-list-item ${Krishi.escapeHTML(alertClass(alert.severity))}`;
             item.innerHTML = `
-                <div class="alert-icon"><i class="bi ${icon}"></i></div>
+                <div class="alert-icon"><i class="bi ${Krishi.escapeHTML(icon)}"></i></div>
                 <div>
                     <div class="d-flex flex-wrap justify-content-between gap-2 mb-1">
-                        <strong>${alert.message}</strong>
-                        <span class="severity-badge ${severityClass}">${alert.severity}</span>
+                        <strong>${Krishi.escapeHTML(alert.message)}</strong>
+                        <span class="severity-badge ${Krishi.escapeHTML(severityClass)}">${Krishi.escapeHTML(alert.severity)}</span>
                     </div>
-                    <div class="small text-muted">${alert.recommended_action}</div>
+                    <div class="small text-muted">${Krishi.escapeHTML(alert.recommended_action)}</div>
                 </div>
             `;
             target.appendChild(item);
@@ -258,16 +246,16 @@
         target.innerHTML = '';
         workflows.forEach(workflow => {
             const item = document.createElement('div');
-            item.className = `audit-row mb-3 priority-${(workflow.priority || '').toLowerCase()}`;
+            item.className = `audit-row mb-3 priority-${Krishi.escapeHTML((workflow.priority || '').toLowerCase())}`;
             item.innerHTML = `
                 <div class="d-flex justify-content-between gap-2">
-                    <strong>${workflow.trigger}</strong>
-                    <span class="badge text-bg-secondary">${workflow.priority}</span>
+                    <strong>${Krishi.escapeHTML(workflow.trigger)}</strong>
+                    <span class="badge text-bg-secondary">${Krishi.escapeHTML(workflow.priority)}</span>
                 </div>
-                <div>${workflow.alert_message}</div>
-                <div class="small text-muted">${workflow.recommended_action}</div>
-                <div class="small">Stakeholder: ${workflow.stakeholder_affected || workflow.stakeholder}</div>
-                <div class="small">Source: ${workflow.data_source || 'Not available'} | Status: ${workflow.status || 'Open'}</div>
+                <div>${Krishi.escapeHTML(workflow.alert_message)}</div>
+                <div class="small text-muted">${Krishi.escapeHTML(workflow.recommended_action)}</div>
+                <div class="small">Stakeholder: ${Krishi.escapeHTML(workflow.stakeholder_affected || workflow.stakeholder)}</div>
+                <div class="small">Source: ${Krishi.escapeHTML(workflow.data_source || 'Not available')} | Status: ${Krishi.escapeHTML(workflow.status || 'Open')}</div>
             `;
             target.appendChild(item);
         });
@@ -284,16 +272,16 @@
             col.innerHTML = `
                 <div class="trust-card p-3">
                     <div class="d-flex justify-content-between gap-2 mb-2">
-                        <h6 class="mb-0">${card.title}</h6>
-                        <span class="status-pill ${card.basis.includes('demo') ? 'status-demo' : card.basis.includes('rule') ? 'status-rule' : 'status-model'}">${card.basis}</span>
+                        <h3 class="mb-0">${Krishi.escapeHTML(card.title)}</h3>
+                        <span class="status-pill ${Krishi.escapeHTML(card.basis.includes('demo') ? 'status-demo' : card.basis.includes('rule') ? 'status-rule' : 'status-model')}">${Krishi.escapeHTML(card.basis)}</span>
                     </div>
-                    <p class="mb-2">${card.why}</p>
+                    <p class="mb-2">${Krishi.escapeHTML(card.why)}</p>
                     <div class="trust-chip-row">
-                        ${mainFactors.map(factor => `<span class="trust-chip">${factor}</span>`).join('')}
-                        ${riskFactors.map(factor => `<span class="trust-chip muted">${factor}</span>`).join('')}
+                        ${mainFactors.map(factor => `<span class="trust-chip">${Krishi.escapeHTML(factor)}</span>`).join('')}
+                        ${riskFactors.map(factor => `<span class="trust-chip muted">${Krishi.escapeHTML(factor)}</span>`).join('')}
                     </div>
-                    <div class="small mt-3"><strong>Reliability:</strong> ${card.confidence}</div>
-                    <div class="small text-muted"><strong>Limitation:</strong> ${(card.limitations || []).slice(0, 1).join('; ') || 'None listed'}</div>
+                    <div class="small mt-3"><strong>Reliability:</strong> ${Krishi.escapeHTML(card.confidence)}</div>
+                    <div class="small text-muted"><strong>Limitation:</strong> ${Krishi.escapeHTML((card.limitations || []).slice(0, 1).join('; ') || 'None listed')}</div>
                 </div>
             `;
             target.appendChild(col);
@@ -306,24 +294,23 @@
         items.forEach(item => {
             const row = document.createElement('div');
             const priorityClass = (item.priority || '').toLowerCase();
-            row.className = `audit-row mb-3 priority-${priorityClass}`;
+            row.className = `audit-row mb-3 priority-${Krishi.escapeHTML(priorityClass)}`;
             row.innerHTML = `
                 <div class="d-flex flex-wrap justify-content-between gap-2">
-                    <strong>${item.trigger}</strong>
-                    <span class="badge text-bg-secondary">${item.status || 'Open'}</span>
+                    <strong>${Krishi.escapeHTML(item.trigger)}</strong>
+                    <span class="badge text-bg-secondary">${Krishi.escapeHTML(item.status || 'Open')}</span>
                 </div>
-                <div>${item.condition}</div>
-                <div class="small text-muted">Action: ${item.recommended_action}</div>
-                <div class="small">Severity: ${item.severity || 'Info'} | Stakeholder: ${item.stakeholder_affected || item.stakeholder}</div>
-                <div class="small">Source: ${item.data_source || 'Not available'} | Time: ${item.timestamp || 'Not available'}</div>
+                <div>${Krishi.escapeHTML(item.condition)}</div>
+                <div class="small text-muted">Action: ${Krishi.escapeHTML(item.recommended_action)}</div>
+                <div class="small">Severity: ${Krishi.escapeHTML(item.severity || 'Info')} | Stakeholder: ${Krishi.escapeHTML(item.stakeholder_affected || item.stakeholder)}</div>
+                <div class="small">Source: ${Krishi.escapeHTML(item.data_source || 'Not available')} | Time: ${Krishi.escapeHTML(item.timestamp || 'Not available')}</div>
             `;
             target.appendChild(row);
         });
     }
 
     function loadDecisionCard() {
-        fetch('/api/decision-card')
-            .then(response => response.json())
+        Krishi.request('/api/decision-card')
             .then(card => {
                 const trustCards = card.explanation_trust || [];
                 const sources = [
@@ -334,12 +321,12 @@
                 ];
                 const reliabilityLevels = [...new Set(trustCards.map(item => item.confidence).filter(Boolean))];
                 const reliability = reliabilityLevels.length ? reliabilityLevels.join(' / ') : 'Limited';
-                const mainAlerts = (card.alerts || []).slice(0, 3).map(alert => `${alert.severity}: ${alert.message}`);
+                const mainAlerts = (card.alerts || []).slice(0, 3).map(alert => `${Krishi.escapeHTML(alert.severity)}: ${Krishi.escapeHTML(alert.message)}`);
                 document.getElementById('topAction').textContent = card.final_recommended_action;
                 document.getElementById('topRisk').textContent = card.risk_level;
                 document.getElementById('topSources').textContent = sources.join('; ') || 'Not available';
                 document.getElementById('topReliability').textContent = reliability || 'Not available';
-                document.getElementById('topAlertCount').textContent = `${(card.alerts || []).length} active`;
+                document.getElementById('topAlertCount').textContent = `${Krishi.escapeHTML((card.alerts || []).length)} active`;
                 document.getElementById('topAlerts').textContent = mainAlerts.join(' | ') || 'No alert summary available.';
                 document.getElementById('decisionCrop').textContent = card.recommended_crop;
                 document.getElementById('decisionFertilizer').textContent = card.fertilizer_recommendation;
@@ -357,52 +344,12 @@
             })
             .catch(error => {
                 document.getElementById('decisionAlerts').textContent = 'Unable to load decision card.';
-                console.error(error);
+                document.getElementById('topAction').textContent = 'Decision unavailable';
+                Krishi.loadFailure(error, loadDecisionCard);
             });
     }
 
-    function askAssistant(question) {
-        const log = document.getElementById('assistantLog');
-        const userMessage = document.createElement('div');
-        userMessage.className = 'assistant-message';
-        userMessage.innerHTML = `<strong>You:</strong> ${question}`;
-        log.appendChild(userMessage);
-
-        fetch('/api/assistant', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({question})
-        })
-        .then(response => response.json())
-        .then(result => {
-            const answer = document.createElement('div');
-            answer.className = 'assistant-message';
-            answer.innerHTML = `
-                <strong>Answer:</strong> ${result.answer}
-                <br><small class="text-muted">Recommended action: ${result.recommended_action}</small>
-                <br><small class="text-muted">Data used: ${(result.data_used || []).join('; ') || 'Not available'}</small>
-                <br><small class="text-muted">Confidence: ${result.confidence}</small>
-                <br><small class="text-muted">Limitation: ${(result.limitations || []).join('; ') || 'None listed'}</small>
-            `;
-            log.appendChild(answer);
-            log.scrollTop = log.scrollHeight;
-        })
-        .catch(error => {
-            const answer = document.createElement('div');
-            answer.className = 'assistant-message text-danger';
-            answer.textContent = 'Assistant is unavailable.';
-            log.appendChild(answer);
-            console.error(error);
-        });
-    }
-
-    document.getElementById('assistantForm').addEventListener('submit', function(event) {
-        event.preventDefault();
-        const input = document.getElementById('assistantQuestion');
-        const question = input.value;
-        input.value = '';
-        askAssistant(question);
-    });
+    const askAssistant = Krishi.bindAssistant({formId: 'assistantForm', inputId: 'assistantQuestion', logId: 'assistantLog'});
 
     loadDecisionCard();
 </script>

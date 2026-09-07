@@ -1,0 +1,103 @@
+steps:
+  - id: container-tests
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --target
+      - test
+      - --tag
+      - krishi-connect-test:${BUILD_ID}
+      - .
+
+  - id: build-runtime
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --target
+      - runtime
+      - --tag
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${_IMAGE_TAG}
+      - .
+
+  - id: push-runtime
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${_IMAGE_TAG}
+
+  - id: configure-migration-job
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - jobs
+      - deploy
+      - ${_MIGRATION_JOB}
+      - --project=${PROJECT_ID}
+      - --region=${_REGION}
+      - --image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${_IMAGE_TAG}
+      - --service-account=${_RUNTIME_SERVICE_ACCOUNT}
+      - --set-cloudsql-instances=${_CLOUD_SQL_CONNECTION}
+      - --set-secrets=DATABASE_URL=${_DATABASE_URL_SECRET}:latest
+      - --command=alembic
+      - --args=upgrade,head
+      - --max-retries=1
+      - --task-timeout=10m
+
+  - id: migrate-database
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - jobs
+      - execute
+      - ${_MIGRATION_JOB}
+      - --project=${PROJECT_ID}
+      - --region=${_REGION}
+      - --wait
+
+  - id: deploy-service
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE_NAME}
+      - --project=${PROJECT_ID}
+      - --region=${_REGION}
+      - --platform=managed
+      - --image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${_IMAGE_TAG}
+      - --service-account=${_RUNTIME_SERVICE_ACCOUNT}
+      - --set-cloudsql-instances=${_CLOUD_SQL_CONNECTION}
+      - --set-secrets=DATABASE_URL=${_DATABASE_URL_SECRET}:latest
+      - --set-env-vars=APP_ENV=production,AUTH_MODE=firebase,FIREBASE_PROJECT_ID=${_FIREBASE_PROJECT_ID},FIREBASE_WEB_API_KEY=${_FIREBASE_WEB_API_KEY},FIREBASE_AUTH_DOMAIN=${_FIREBASE_AUTH_DOMAIN},THINGSPEAK_CHANNEL_ID=${_THINGSPEAK_CHANNEL_ID}
+      - --allow-unauthenticated
+      - --cpu=1
+      - --memory=1Gi
+      - --concurrency=40
+      - --min-instances=0
+      - --max-instances=3
+      - --timeout=60s
+
+images:
+  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${_IMAGE_TAG}
+
+substitutions:
+  _REGION: asia-south1
+  _AR_REPOSITORY: krishi-connect
+  _SERVICE_NAME: krishi-connect
+  _IMAGE_TAG: manual
+  _MIGRATION_JOB: krishi-connect-migrate
+  _RUNTIME_SERVICE_ACCOUNT: krishi-connect-runtime@${PROJECT_ID}.iam.gserviceaccount.com
+  _CLOUD_SQL_CONNECTION: ${PROJECT_ID}:asia-south1:krishi-connect-db
+  _DATABASE_URL_SECRET: krishi-database-url
+  _FIREBASE_PROJECT_ID: replace-me
+  _FIREBASE_WEB_API_KEY: replace-me
+  _FIREBASE_AUTH_DOMAIN: replace-me.firebaseapp.com
+  _THINGSPEAK_CHANNEL_ID: "2914283"
+
+options:
+  dynamicSubstitutions: true
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 1800s

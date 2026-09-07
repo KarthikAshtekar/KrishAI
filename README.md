@@ -1,245 +1,181 @@
-# Krishi Connect - Agricultural Decision Intelligence Platform
+# Krishi Connect
 
-Krishi Connect is an AI-powered agricultural decision intelligence prototype for farmers, buyers, FPOs/cooperatives, and local agriculture stakeholders. It connects farm inputs, IoT sensor data, saved ML models, transparent rule-based automation, market/sample buyer signals, and an intent-based assistant to support better rural decisions.
+Krishi Connect is a cloud-ready agricultural decision-intelligence application for farmers, buyers, FPOs/cooperatives, and agriculture teams. It combines saved crop and fertilizer models, transparent price rules, optional ThingSpeak readings, workflow alerts, tenant-scoped decision history, and a guided assistant.
 
-Tagline:
+The repository is implementation-complete for a cloud handoff. Google Cloud resources are **not live yet**: provisioning requires a project ID, billing approval, Firebase web configuration, and the first administrator's Firebase UID. No local PostgreSQL installation is required.
 
-> Connecting farm data, AI models, IoT signals, and market intelligence for better rural decisions.
+## Current evidence boundary
 
-## Problem Statement Alignment
-
-This project is aligned with the decision intelligence problem statement:
-
-> Build an AI-powered Decision Intelligence Platform that leverages data, AI models, and intelligent automation to help individuals, communities, organizations, and city stakeholders analyze information, generate insights, predict outcomes, and make better decisions that improve everyday life and community well-being.
-
-For this repo, the domain is agriculture and rural decision intelligence. The platform supports crop selection, fertilizer selection, irrigation urgency, risk monitoring, market readiness, buyer/FPO coordination, workflow alerts, and community-level prioritization.
-
-## How This Project Satisfies The Decision Intelligence Platform Problem Statement
-
-| Requirement | Implemented feature | Current status | Route or module |
-| --- | --- | --- | --- |
-| Data analysis | ThingSpeak sensor readings are cleaned, normalized, charted, and summarized. | Real if configured | `/dashboard`, `/api/data`, `app.py` |
-| AI/ML predictions | Crop and fertilizer recommendations use saved Random Forest model artifacts. | Model-based | `/api/crop-recommendation`, `/api/fertilizer-recommendation`, `ml_services.py` |
-| Pattern/anomaly detection | Low moisture, heat stress, disease-weather risk, missing/stale data, and sudden changes are detected. | Rule-based | `/api/iot/anomalies`, `decision_engine.py` |
-| Natural-language assistance | Assistant answers crop, fertilizer, irrigation, risk, price, alerts, actions, and data-source questions. | Rule-based prototype | `/api/assistant`, `/decision-intelligence`, `/farmer-dashboard` |
-| Recommendations | Farmer Decision Card combines model outputs, IoT alerts, price outlook, buyer suggestion, and final action. | MVP implemented | `/api/decision-card`, `/decision-intelligence` |
-| Workflow automation | Alerts include trigger, condition, severity, stakeholder, source, timestamp, status, and action. | Rule-based MVP | `/api/automation-log`, `decision_engine.py` |
-| Stakeholder decision support | Farmer, marketplace/buyer, and FPO/community dashboards are available. | Demo plus real card | `/farmer-dashboard`, `/marketplace`, `/community-dashboard` |
-| Community well-being impact | Community demo highlights farms needing irrigation/heat support and suggests FPO actions. | Demo data | `/api/community/summary`, `/community-dashboard` |
-
-## What Is Real vs Rule-Based vs Demo
-
-- **Model-based:** crop recommendation and fertilizer recommendation use saved scikit-learn Random Forest artifacts and encoders.
-- **Real-time if configured:** ThingSpeak IoT readings are fetched using environment variables.
-- **Rule-based:** anomaly detection, risk level, workflow automation, audit trail, and assistant intent handling.
-- **Demo fallback:** price outlook uses transparent assumptions because the saved XGBoost model's fitted preprocessing pipeline was not saved.
-- **Demo data:** marketplace listings and community/FPO aggregation are sample data until real multi-farmer and buyer records are connected.
-- **Disabled prototype:** disease image inference is disabled. A `.keras` file exists, but class labels and validated preprocessing/inference metadata are missing. Random disease labels are not used.
-
-## Architecture
-
-```text
-Users / Stakeholders
-    |
-    +-- Farmer Dashboard
-    +-- Buyer / Marketplace Dashboard
-    +-- FPO / Community Dashboard
-    +-- Recommendation Forms
-    +-- IoT Monitoring
-    |
-    v
-FastAPI app.py
-    |
-    +-- templates/
-    |     +-- index.html                    Recommendation forms
-    |     +-- decision.html                 Decision Card, trust layer, audit trail, assistant
-    |     +-- dashboard.html                IoT charts and anomaly alerts
-    |     +-- farmer_dashboard.html         Farmer operating view
-    |     +-- marketplace.html              Demo buyer-connect view
-    |     +-- community_dashboard.html      Demo FPO/community view
-    |
-    +-- ml_services.py
-    |     +-- Crop recommendation wrapper
-    |     +-- Fertilizer recommendation wrapper
-    |     +-- Transparent price-outlook fallback
-    |     +-- Disease feature status
-    |     +-- Explanation metadata for model/demo outputs
-    |
-    +-- decision_engine.py
-    |     +-- IoT anomaly detection
-    |     +-- Explanation & Trust cards
-    |     +-- Farmer Decision Card assembly
-    |     +-- Workflow automation and audit log
-    |     +-- Intent-based assistant
-    |     +-- Demo marketplace and community data
-    |
-    +-- models/
-    |     +-- Crop_recommendation_model.pkl
-    |     +-- Fertilizer_recommendation.pkl
-    |     +-- Crop_price_prediction_model.pkl
-    |     +-- Label encoders
-    |
-    +-- Jupyter files/
-          +-- Training notebooks and CSV reference data
-```
-
-## Pages
-
-| Page | Purpose |
+| Capability | Current status |
 | --- | --- |
-| `/` | Recommendation forms for crop, fertilizer, price outlook, and disease feature status |
-| `/decision-intelligence` | Decision Card, Explanation & Trust, workflow automation, audit trail, assistant |
-| `/dashboard` | ThingSpeak IoT charts and anomaly alert cards |
-| `/farmer-dashboard` | Farmer-oriented action dashboard with alerts, recommendation summary, assistant |
-| `/marketplace` | Demo buyer/marketplace dashboard with crop listings and match scores |
-| `/community-dashboard` | Demo FPO/community dashboard with aggregate risk and supply insights |
-| `/disease-prediction` | Disease feature status page, with inference disabled until metadata is validated |
-| `/healthz` | Lightweight deployment health check |
+| Crop and fertilizer recommendations | Saved scikit-learn artifacts load under their matching `1.6.1` runtime; predictive quality has not been revalidated without held-out data. |
+| Price outlook | Transparent CSV lookup plus seasonal/year rules; the incomplete legacy XGBoost path is not loaded. |
+| Disease inference | Disabled until class labels, preprocessing, and validation images are available. |
+| IoT | ThingSpeak integration is ready when a channel/key is configured; no live farmer feed is currently connected. |
+| Marketplace and community views | Clearly labelled sample data. |
+| Authentication | Firebase ID-token/session-cookie flow is implemented; demo identity is allowed only outside staging/production. |
+| Persistence and tenant isolation | SQLAlchemy schema, Alembic migration, scoped repositories, audit records, and cross-tenant denial tests are implemented. |
+| Monitoring | JSON request logs, request IDs, readiness checks, Cloud Run metrics, and parameterized alert-policy setup are implemented/configured; alerts become live only after deployment and a notification channel are connected. |
+| CI/CD | GitHub Actions quality gates and Cloud Build migration/deployment pipeline are included; neither has been run in the user's cloud account yet. |
 
-## API Endpoints
+## Application pipeline
 
-| Endpoint | Method | Purpose |
+```text
+Browser or API client
+  -> Firebase sign-in (production) / explicit demo identity (local only)
+  -> FastAPI validation and tenant-membership resolution
+  -> optional ThingSpeak normalization
+  -> crop/fertilizer model wrappers + transparent price rules
+  -> anomaly, explanation, action, and workflow assembly
+  -> tenant-scoped PostgreSQL decision card + audit event
+  -> server-rendered dashboard or JSON response
+  -> structured logs and Cloud Run/Cloud SQL platform metrics
+```
+
+## Cloud architecture
+
+```text
+Firebase Authentication / Identity Platform
+                 |
+                 v
+Public HTTPS Cloud Run service (application authentication still required)
+  |              |                  |
+  |              |                  +-> Cloud Logging / Monitoring
+  |              +-> optional ThingSpeak HTTPS API
+  +-> Cloud SQL Auth Connector socket -> Cloud SQL for PostgreSQL
+
+Cloud Build -> Artifact Registry -> migration Cloud Run Job -> Cloud Run revision
+Secret Manager -> DATABASE_URL injected into service and migration job
+```
+
+Cloud Run is allowed to receive unauthenticated HTTPS traffic because users need to reach `/login`; business pages and APIs enforce Firebase/application authentication. The runtime service account receives only Cloud SQL Client and Secret Manager accessor permissions. Database migrations run as a separate job before a new service revision is deployed.
+
+## Local development without PostgreSQL
+
+SQLite is built into Python and is intentionally supported for local development/tests only.
+
+Use **Python 3.13** (also used by Docker and CI). The pinned NumPy version requires Python 3.12 or newer.
+
+```powershell
+py -3.13 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+Copy-Item .env.example .env
+.\.venv\Scripts\alembic.exe upgrade head
+.\.venv\Scripts\python.exe -m uvicorn app:app --reload --port 8080
+```
+
+Open `http://localhost:8080`. With the example configuration, the UI shows that a non-production demo identity is active. Do not use `AUTH_MODE=demo` for a deployed environment; production configuration rejects it at startup.
+
+## Pages and operational endpoints
+
+| Path | Purpose |
+| --- | --- |
+| `/login` | Firebase email/password login or an explicit local demo-mode notice |
+| `/` | Crop, fertilizer, price, and disease-status forms |
+| `/decision-intelligence` | Decision card, trust layer, workflow log, and assistant |
+| `/dashboard` | Optional ThingSpeak charts and anomaly alerts |
+| `/farmer-dashboard` | Farmer action view |
+| `/marketplace` | Sample marketplace view |
+| `/community-dashboard` | Sample FPO/community view |
+| `/healthz` | Process liveness only |
+| `/readyz` | Database and critical-model readiness; returns `503` when unavailable |
+
+All business APIs require a verified principal. A client may send `X-Tenant-ID` only to select among its own memberships; it cannot use the header to acquire membership.
+
+## Configuration
+
+Copy `.env.example`; never commit `.env`.
+
+| Variable | Local default | Production requirement |
 | --- | --- | --- |
-| `/api/crop-recommendation` | POST form | Model-based crop recommendation with explanation |
-| `/api/fertilizer-recommendation` | POST JSON | Model-based fertilizer recommendation with explanation |
-| `/api/crop-price-prediction` | POST form | Transparent demo price outlook |
-| `/api/disease-prediction` | POST form | Disabled/prototype disease status |
-| `/api/data` | GET | Latest ThingSpeak sensor readings |
-| `/api/iot/anomalies` | GET | Rule-based anomaly report |
-| `/api/decision-card` | GET | Demo Farmer Decision Card |
-| `/api/decision-card` | POST JSON | Farmer Decision Card from supplied farm inputs |
-| `/api/automation-log` | GET | Workflow automation and audit trail |
-| `/api/assistant` | POST JSON | Structured intent-based assistant response |
-| `/api/marketplace/listings` | GET | Demo marketplace listings |
-| `/api/community/summary` | GET | Demo FPO/community summary |
-| `/healthz` | GET | Cloud Run health check |
+| `APP_ENV` | `development` | `production` |
+| `AUTH_MODE` | `demo` | `firebase` |
+| `DATABASE_URL` | local SQLite | Secret Manager value pointing to Cloud SQL PostgreSQL |
+| `FIREBASE_PROJECT_ID` | blank | required |
+| `FIREBASE_WEB_API_KEY` | blank | required web configuration; public identifier, not an admin credential |
+| `FIREBASE_AUTH_DOMAIN` | blank | required |
+| `THINGSPEAK_CHANNEL_ID` | demo channel ID | replace when a farmer feed is connected |
+| `THINGSPEAK_READ_API_KEY` | blank | optional secret for a private channel |
 
-## Explanation & Trust Layer
+The backend uses Application Default Credentials for Firebase Admin. Never download or commit a service-account JSON key for Cloud Run.
 
-The Decision Card includes an `explanation_trust` array. Each card includes:
+## Tests and quality gates
 
-- Main factors considered
-- Positive factors
-- Risk factors
-- Confidence / reliability label
-- Data source
-- Whether the output is model-based, rule-based, demo-based, or unavailable
-
-SHAP/model-level explainability is future scope. The current implementation uses transparent explanation cards because the saved model artifacts do not include a stable explainability pipeline.
-
-## Assistant Response Contract
-
-`/api/assistant` returns:
-
-```json
-{
-  "answer": "...",
-  "intent": "crop_recommendation",
-  "data_used": ["latest decision card"],
-  "recommended_action": "...",
-  "confidence": "Moderate",
-  "limitations": ["..."],
-  "basis": "latest decision card"
-}
-```
-
-The assistant does not use paid APIs or generative model calls. If data is missing, it says that the information is not available yet.
-
-## Environment Variables
-
-Create a `.env` file from `.env.example`:
+The September application review, responsive UI changes, verification results and browser test instructions are in [docs/UI_REVIEW.md](docs/UI_REVIEW.md).
 
 ```powershell
-copy .env.example .env
+.\.venv\Scripts\ruff.exe check .
+.\.venv\Scripts\python.exe -m unittest discover -v
+.\.venv\Scripts\python.exe -m py_compile app.py auth.py config.py database.py db_models.py decision_engine.py ml_services.py observability.py repositories.py schemas.py
+.\.venv\Scripts\pip-audit.exe -r requirements.txt
 ```
 
-Configure:
-
-```text
-THINGSPEAK_CHANNEL_ID=2914283
-THINGSPEAK_READ_API_KEY=your_thingspeak_read_api_key
-THINGSPEAK_RESULTS=10
-```
-
-The ThingSpeak read key is not hardcoded in `app.py`.
-
-## Setup
+Migration verification:
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\activate
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-python app.py
+$env:DATABASE_URL = "sqlite+pysqlite:///./migration_check.db"
+.\.venv\Scripts\alembic.exe upgrade head
+.\.venv\Scripts\alembic.exe check
+.\.venv\Scripts\alembic.exe downgrade base
 ```
 
-Open:
+The GitHub workflow additionally builds both Docker test and runtime stages. The runtime container runs as an unprivileged user and excludes the disabled 51 MB disease artifact and unused price pickle.
 
-```text
-http://localhost:8000
-```
+## Google Cloud deployment
 
-Alternative:
+Use Google Cloud Shell so no PostgreSQL, Docker, or Google Cloud CLI installation is needed on the PC. The guarded bootstrap script refuses to create paid resources unless `CONFIRM_CREATE_PAID_RESOURCES=YES` is set.
 
-```powershell
-uvicorn app:app --reload
-```
+1. Create or select a billed Google Cloud project.
+2. Add Firebase to that project, register a web app, and enable Email/Password authentication.
+3. In Cloud Shell, clone this repository and export the required values.
+4. Run `scripts/gcp_bootstrap.sh` only after reviewing Cloud SQL pricing.
+5. Submit `cloudbuild.yaml` with the exact substitutions printed by the bootstrap script.
+6. Create the first Firebase user, then run the tenant-bootstrap job documented in [docs/GCP_RUNBOOK.md](docs/GCP_RUNBOOK.md).
+7. Verify `/healthz`, `/readyz`, sign-in, tenant access, logs, and backups before sending live traffic.
 
-## Google Cloud Run Deployment
-
-The repo includes a Cloud Run-ready `Dockerfile` and `.dockerignore`. The container listens on `0.0.0.0` and uses the `PORT` environment variable, defaulting to `8080`.
-
-Enable required Google Cloud services:
+Example bootstrap environment:
 
 ```bash
-gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
+export GCP_PROJECT_ID="your-project-id"
+export GCP_REGION="asia-south1"
+export FIREBASE_PROJECT_ID="your-project-id"
+export FIREBASE_WEB_API_KEY="your-public-web-api-key"
+export FIREBASE_AUTH_DOMAIN="your-project-id.firebaseapp.com"
+export CONFIRM_CREATE_PAID_RESOURCES="YES"
+bash scripts/gcp_bootstrap.sh
 ```
 
-Deploy from the repository root:
+Detailed provisioning, deployment, first-admin bootstrap, monitoring, rollback, backup, and teardown instructions are in [docs/GCP_RUNBOOK.md](docs/GCP_RUNBOOK.md).
 
-```bash
-gcloud run deploy krishi-connect \
-  --source . \
-  --region asia-south1 \
-  --allow-unauthenticated \
-  --memory 1Gi \
-  --set-env-vars THINGSPEAK_CHANNEL_ID=<YOUR_CHANNEL_ID>,THINGSPEAK_READ_API_KEY=<YOUR_READ_API_KEY>
-```
+## Data model
 
-After deployment, verify:
+The initial migration creates:
 
-```bash
-curl https://<YOUR_CLOUD_RUN_URL>/healthz
-```
+- tenants, users, and tenant memberships;
+- farms and plots;
+- sensor devices and time-stamped readings;
+- decision cards and audit events;
+- marketplace listings and model-version records.
 
-Expected response:
+Every tenant-owned repository read requires `tenant_id`. Decision responses include a durable `decision_id`; automation and assistant paths load the current tenant's latest database record rather than process memory.
 
-```json
-{"status":"ok","service":"krishi-connect"}
-```
+## Security and operations
 
-## Testing
+- Production fails closed if Firebase, PostgreSQL, or Firebase web configuration is missing.
+- Firebase tokens are verified by the Admin SDK; recently authenticated ID tokens are exchanged for HTTP-only session cookies.
+- Session creation/logout use double-submit CSRF checks; secure cookies and HSTS are enabled in deployed environments.
+- Inputs are bounded, extra JSON fields are rejected, uploads are limited to 5 MB and safe image types, and internal exception text is not exposed.
+- Responses carry CSP, clickjacking, content-type, referrer, permissions, and request-ID headers.
+- Logs contain bounded request metadata, not bodies, passwords, cookies, authorization headers, or tokens.
+- Alembic migrations are not executed implicitly during production web startup.
 
-Run:
+## Remaining work requiring external data or human decisions
 
-```powershell
-python -m unittest discover
-python -m py_compile app.py ml_services.py decision_engine.py tests/test_decision_engine.py
-```
+- Connect and validate the actual farmer/ThingSpeak source and define ownership/consent/retention rules.
+- Recreate and validate the full price preprocessing/model pipeline.
+- Supply disease class labels, preprocessing contract, representative validation images, and agronomist approval.
+- Replace sample marketplace/community records with consented operational data.
+- Configure notification recipients, an uptime check, budgets, production hostname, and final CSP/cookie-domain review.
+- Revalidate crop/fertilizer quality on a locked representative holdout before claiming production agronomic accuracy.
 
-## Limitations
-
-- Price prediction is currently a transparent fallback/demo. Real model inference requires saving the full encoder/scaler/model preprocessing pipeline.
-- Disease detection is disabled until class labels, preprocessing, TensorFlow dependency strategy, and validation images are added.
-- Marketplace and community dashboards use sample data, clearly labelled as demo data.
-- The assistant is an intent-based prototype and does not reason beyond available decision-card/anomaly/workflow data.
-- Model artifacts may emit version-compatibility warnings when loaded with newer scikit-learn/XGBoost versions.
-
-## Future Scope
-
-- Save and serve a full crop price ML pipeline.
-- Add validated disease model inference with class labels and tests.
-- Store farmer profiles, plots, sensor devices, marketplace listings, and decision history in a database.
-- Add authentication and role-specific access.
-- Add SHAP or another model-level explanation method after stable pipelines are available.
-- Replace demo marketplace/community data with real FPO, buyer, and farmer datasets.
+The canonical business-and-technical explanation is `project_explainer.html`; it separates code-complete capabilities from cloud resources and live-data evidence that are still pending.

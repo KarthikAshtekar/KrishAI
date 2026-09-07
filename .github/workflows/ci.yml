@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements-dev.txt
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Compile
+        run: python -m py_compile app.py auth.py config.py database.py db_models.py decision_engine.py ml_services.py observability.py repositories.py schemas.py
+
+      - name: Test
+        run: python -m unittest discover -v
+
+      - name: Verify migrations
+        env:
+          DATABASE_URL: sqlite+pysqlite:///./ci_migration.db
+        run: |
+          alembic upgrade head
+          alembic check
+          alembic downgrade base
+
+      - name: Audit dependencies
+        run: pip-audit -r requirements.txt
+
+      - name: Build and test container
+        run: |
+          docker build --target test -t krishi-connect:test .
+          docker build --target runtime -t krishi-connect:ci .

@@ -2,86 +2,51 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Krishi Connect - Decision Intelligence{% endblock %}</title>
-    <link rel="stylesheet" href="/static/style.css?v=f0dfcc4">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#174f3c">
+    <title>{% block title %}Krishi Connect{% endblock %}</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/static/vendor/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/vendor/bootstrap-icons.css">
+    <link rel="stylesheet" href="/static/style.css?v=ux-2">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-success">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="bi bi-flower1"></i> Krishi Connect
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.url.path == '/' %}active{% endif %}" href="/">
-                            <i class="bi bi-robot"></i> Recommendations
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.url.path == '/decision-intelligence' %}active{% endif %}" href="/decision-intelligence">
-                            <i class="bi bi-diagram-3"></i> Decision Intelligence
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.url.path == '/dashboard' %}active{% endif %}" href="/dashboard">
-                            <i class="bi bi-graph-up"></i> IoT Monitoring
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.url.path == '/farmer-dashboard' %}active{% endif %}" href="/farmer-dashboard">
-                            <i class="bi bi-person-lines-fill"></i> Farmer
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.url.path == '/marketplace' %}active{% endif %}" href="/marketplace">
-                            <i class="bi bi-shop"></i> Marketplace
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.url.path == '/community-dashboard' %}active{% endif %}" href="/community-dashboard">
-                            <i class="bi bi-people"></i> Community
-                        </a>
-                    </li>
-                </ul>
-            </div>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="app-header">
+        <a class="brand" href="/"><span class="brand-mark"><i class="bi bi-flower1" aria-hidden="true"></i></span> Krishi<span class="brand-light">Connect</span></a>
+        <span class="header-context">Your farm, informed.</span>
+        <div class="header-actions">
+            {% if app_auth_mode == "demo" %}<a class="environment-label" href="/login">Demo workspace</a>
+            {% elif request.url.path != "/login" %}<button class="btn btn-sm btn-outline-success" id="signOut" type="button">Sign out</button>{% endif %}
+            <button class="menu-toggle btn btn-outline-success" type="button" aria-controls="app-navigation" aria-expanded="false" aria-label="Open navigation"><i class="bi bi-list" aria-hidden="true"></i><span>Menu</span></button>
         </div>
-    </nav>
-
-    <div class="container mt-4">
-        {% block content %}{% endblock %}
+    </header>
+    <div class="app-layout">
+        <nav class="app-navigation" id="app-navigation" aria-label="Main navigation">
+            <div class="nav-caption">WORKSPACE</div>
+            {% for href, icon, label in [('/', 'grid', 'Recommendations'), ('/farmer-dashboard', 'sun', 'My farm'), ('/decision-intelligence', 'clipboard-check', 'Decision overview'), ('/dashboard', 'activity', 'Sensor monitoring'), ('/marketplace', 'shop', 'Marketplace'), ('/community-dashboard', 'people', 'Community')] %}
+            <a href="{{ href }}" class="workspace-link{% if request.url.path == href %} active{% endif %}"{% if request.url.path == href %} aria-current="page"{% endif %}><i class="bi bi-{{ icon }}" aria-hidden="true"></i><span>{{ label }}</span>{% if href in ['/marketplace', '/community-dashboard'] %}<small>Sample</small>{% endif %}</a>
+            {% endfor %}
+            <div class="navigation-note"><i class="bi bi-info-circle" aria-hidden="true"></i><p>Check field conditions before acting on a recommendation.</p><a href="/#disease">Disease feature status</a></div>
+        </nav>
+        <div class="workspace">
+            <main id="main-content" tabindex="-1">
+                <div id="pageNotice" class="page-notice" role="status" hidden></div>
+                <noscript><div class="alert alert-warning">Enable JavaScript to submit recommendations and load dashboards.</div></noscript>
+                {% block content %}{% endblock %}
+            </main>
+            <footer class="status-footer"><span>Krishi Connect</span><span>Guidance to support your judgment. Sample data is labelled.</span></footer>
+        </div>
     </div>
-
-    <footer class="status-footer mt-5">
-        <div class="container py-4">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <strong>Prototype deployed on Google Cloud Run</strong>
-                    <div class="text-muted small">Working decision intelligence MVP for hackathon validation.</div>
-                    <div class="text-muted small">Build: f0dfcc4</div>
-                </div>
-                <div class="col-md-4">
-                    <strong>Real-time IoT via ThingSpeak</strong>
-                    <div class="text-muted small">ML models: Crop and fertilizer recommendation.</div>
-                </div>
-                <div class="col-md-4">
-                    <strong>Demo modules: Marketplace, community aggregation, price outlook</strong>
-                    <div class="text-muted small">Disabled until validation: Disease detection.</div>
-                </div>
-            </div>
-        </div>
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <nav class="mobile-bar" aria-label="Quick navigation">
+        {% for href, icon, label in [('/', 'grid', 'Tools'), ('/farmer-dashboard', 'sun', 'My farm'), ('/dashboard', 'activity', 'Sensors')] %}
+        <a href="{{ href }}"{% if request.url.path == href %} aria-current="page"{% endif %}><i class="bi bi-{{ icon }}" aria-hidden="true"></i><span>{{ label }}</span></a>
+        {% endfor %}
+        <button class="menu-toggle" type="button" aria-controls="app-navigation" aria-expanded="false" aria-label="More navigation"><i class="bi bi-list" aria-hidden="true"></i><span>More</span></button>
+    </nav>
+    <script src="/static/vendor/bootstrap.bundle.min.js"></script>
+    <script src="/static/app.js?v=ux-2"></script>
     {% block extra_js %}{% endblock %}
 </body>
-</html> 
+</html>

@@ -7,7 +7,6 @@ from typing import Any
 import joblib
 import pandas as pd
 
-
 BASE_DIR = Path(__file__).resolve().parent
 MODELS_DIR = BASE_DIR / "models"
 DATA_DIR = BASE_DIR / "Jupyter files"
@@ -41,7 +40,7 @@ def load_model(model_path: Path) -> Any | None:
             return joblib.load(model_path)
         with model_path.open("rb") as file_obj:
             return pickle.load(file_obj)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - serialization libraries raise heterogeneous errors
         print(f"Error loading model {model_path}: {exc}")
         return None
 
@@ -132,18 +131,34 @@ class KrishiModelService:
     def __init__(self) -> None:
         self.crop_model = load_model(MODELS_DIR / "Crop_recommendation_model.pkl")
         self.fertilizer_model = load_model(MODELS_DIR / "Fertilizer_recommendation.pkl")
-        self.price_model = load_model(MODELS_DIR / "Crop_price_prediction_model.pkl")
         self.soil_type_encoder = load_model(MODELS_DIR / "soil_type_encoder.joblib")
         self.crop_type_encoder = load_model(MODELS_DIR / "crop_type_encoder.joblib")
         self.fertilizer_encoder = load_model(MODELS_DIR / "fertilizer_encoder.joblib")
         self.crop_price_data = self._load_crop_price_data()
+
+    def readiness_status(self) -> dict[str, Any]:
+        components = {
+            "crop_model_loaded": self.crop_model is not None,
+            "fertilizer_model_loaded": self.fertilizer_model is not None,
+            "soil_encoder_loaded": self.soil_type_encoder is not None,
+            "crop_encoder_loaded": self.crop_type_encoder is not None,
+            "fertilizer_encoder_loaded": self.fertilizer_encoder is not None,
+            "price_reference_loaded": not self.crop_price_data.empty,
+        }
+        return {
+            "ready": all(components.values()),
+            "components": components,
+            "artifact_runtime": "scikit-learn 1.6.1",
+            "validation_status": "Loaded successfully; predictive quality was not revalidated without held-out data.",
+            "price_path": "Transparent lookup/rule fallback; unused legacy XGBoost pickle is not loaded.",
+        }
 
     def _load_crop_price_data(self) -> pd.DataFrame:
         try:
             data = pd.read_csv(DATA_DIR / "Crop_Price.csv")
             data["Crop"] = data["Crop"].astype(str).str.strip().str.upper()
             return data
-        except Exception as exc:
+        except (OSError, ValueError, pd.errors.ParserError) as exc:
             print(f"Error loading crop price data: {exc}")
             return pd.DataFrame()
 
@@ -219,9 +234,13 @@ class KrishiModelService:
 
         soil_type = _match_known_value(str(input_data["soil_type"]), VALID_SOIL_TYPES, "soil type")
         crop_type = _match_known_value(str(input_data["crop_type"]), VALID_CROP_TYPES, "crop type")
+        moisture = input_data.get("moisture")
+        if moisture is None:
+            moisture = 45
         normalized = {
             "temperature": float(input_data["temperature"]),
             "humidity": float(input_data["humidity"]),
+            "moisture": float(moisture),
             "nitrogen": float(input_data["nitrogen"]),
             "phosphorous": float(input_data["phosphorous"]),
             "potassium": float(input_data["potassium"]),
@@ -234,7 +253,7 @@ class KrishiModelService:
                 {
                     "Temperature": normalized["temperature"],
                     "Humidity": normalized["humidity"],
-                    "Moisture": float(input_data.get("moisture", 45)),
+                    "Moisture": normalized["moisture"],
                     "Soil Type": soil_type,
                     "Crop Type": crop_type,
                     "Nitrogen": normalized["nitrogen"],

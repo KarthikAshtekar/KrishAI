@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 
@@ -71,7 +71,7 @@ def _alert(
         "condition": message,
         "stakeholder_affected": stakeholder,
         "data_source": data_source,
-        "timestamp": (timestamp or datetime.now(timezone.utc)).isoformat(),
+        "timestamp": (timestamp or datetime.now(UTC)).isoformat(),
         "status": "Open" if severity in {"Critical", "Warning"} else "Monitoring",
     }
 
@@ -80,7 +80,7 @@ def detect_iot_anomalies(
     feeds: list[dict[str, Any]] | None,
     now: datetime | None = None,
 ) -> dict[str, Any]:
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
     readings = [normalize_sensor_reading(feed) for feed in feeds or []]
     alerts: list[dict[str, Any]] = []
 
@@ -171,25 +171,24 @@ def detect_iot_anomalies(
             )
 
     humidity = latest["humidity"]
-    if humidity is not None and temperature is not None:
-        if humidity >= 80 and 20 <= temperature <= 32:
-            alerts.append(
-                _alert(
-                    "disease_weather_risk",
-                    "Warning",
-                    "Humidity and temperature are favourable for disease pressure.",
-                    "Inspect leaves and improve field ventilation/drainage where possible.",
-                    "humidity",
-                    humidity,
-                )
+    if humidity is not None and temperature is not None and humidity >= 80 and 20 <= temperature <= 32:
+        alerts.append(
+            _alert(
+                "disease_weather_risk",
+                "Warning",
+                "Humidity and temperature are favourable for disease pressure.",
+                "Inspect leaves and improve field ventilation/drainage where possible.",
+                "humidity",
+                humidity,
             )
+        )
 
     if latest.get("created_at"):
         latest_time = _parse_datetime(latest["created_at"])
         if latest_time is not None:
             if latest_time.tzinfo is None:
-                latest_time = latest_time.replace(tzinfo=timezone.utc)
-            age_minutes = (now - latest_time.astimezone(timezone.utc)).total_seconds() / 60
+                latest_time = latest_time.replace(tzinfo=UTC)
+            age_minutes = (now - latest_time.astimezone(UTC)).total_seconds() / 60
             if age_minutes > 180:
                 alerts.append(
                     _alert(
@@ -510,7 +509,7 @@ def build_workflow_alerts(
                     "stakeholder": "Farmer / Buyer",
                     "stakeholder_affected": "Farmer / Buyer",
                     "data_source": "Crop price reference data and demo price-outlook rules",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "status": "Open",
                 }
             )
@@ -526,7 +525,7 @@ def build_workflow_alerts(
                     "stakeholder": "Farmer",
                     "stakeholder_affected": "Farmer",
                     "data_source": "Crop price reference data and demo price-outlook rules",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "status": "Monitoring",
                 }
             )
@@ -544,7 +543,7 @@ def build_workflow_alerts(
                     "stakeholder": "Farmer / Buyer / FPO",
                     "stakeholder_affected": "Farmer / Buyer / FPO",
                     "data_source": "Demo marketplace sample data",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "status": "Monitoring",
                 }
             )
@@ -785,7 +784,23 @@ def answer_farmer_question(
         )
 
     if any(keyword in text for keyword in ["irrigate", "water", "moisture"]):
-        moisture_alerts = [alert for alert in alerts if "moisture" in alert.get("code", "")]
+        latest = anomalies.get("latest_reading") or {}
+        moisture = _parse_float(latest.get("soil_moisture"))
+        unavailable = moisture is None or not 0 <= moisture <= 100
+        stale = any(alert.get("code") in {"no_sensor_data", "stale_sensor_data"} for alert in alerts)
+        if unavailable or stale:
+            return response(
+                "I cannot assess current irrigation needs from missing, stale, or invalid moisture readings.",
+                "irrigation_advice",
+                ["latest anomaly report"],
+                "Verify current soil moisture and the sensor connection before deciding on irrigation.",
+                "Low",
+                ["Current, valid field readings are needed for irrigation guidance."],
+                "data unavailable",
+            )
+        moisture_alerts = [
+            alert for alert in alerts if alert.get("code") in {"critical_low_moisture", "low_moisture"}
+        ]
         if moisture_alerts:
             first = moisture_alerts[0]
             return response(
