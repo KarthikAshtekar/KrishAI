@@ -35,3 +35,10 @@ project_explainer.html
 project_explainer_artifact.json
 package_project_explainer.mjs
 krishi_connect.db
+*.db
+*.db-shm
+*.db-wal
+.browser-tools/
+baseline-mobile.png
+review-desktop.png
+review-mobile.png
